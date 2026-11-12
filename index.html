@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<title>Prompt Shelf v7 | 編集できる返答方針と保存・引き継ぎ</title>
+<title>Prompt Shelf v8 | 編集できる返答方針と保存・引き継ぎ</title>
 <style>
 :root{--ink:#213449;--muted:#65778a;--line:#dce5ef;--blue:#2a648e;--blue-2:#e9f2f9;--bg:#f4f7f9;--card:#fff;--danger:#a74648;--ok:#347664;--shadow:0 10px 25px rgba(29,60,82,.045)}
 *{box-sizing:border-box}html,body{min-height:100%;margin:0}body{background:linear-gradient(135deg,#edf4f8 0,#f9fafb 49%,#eef5f5 100%);color:var(--ink);font:14px/1.65 -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.38}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid #9bc8e2;outline-offset:2px}
@@ -16,7 +16,7 @@
 </head>
 <body>
 <div class="shell">
-<header class="top"><div><div class="eyebrow">PROMPT SHELF / V7</div><h1>定型文とモード</h1><p class="intro">生成は定型文とIF指定、会話は返答スタイルを選ぶだけ。返答方針も自由に管理できます。</p></div><span class="status" id="status">保存状況を確認中</span></header>
+<header class="top"><div><div class="eyebrow">PROMPT SHELF / V8</div><h1>定型文とモード</h1><p class="intro">生成は定型文とIF指定、会話は返答スタイルを選ぶだけ。返答方針も自由に管理できます。</p></div><span class="status" id="status">保存状況を確認中</span></header>
 <div id="warning" class="alert hidden" role="alert">この開き方ではブラウザへの保存を確認できません。作業が終わる前に必ずバックアップを書き出すか、文字列をコピーしてください。</div>
 <main class="layout">
 <section class="card full" aria-labelledby="modeHead"><div class="head"><div class="headmain"><span class="step">1</span><h2 id="modeHead">モードを選ぶ</h2></div><span class="pill">2つの大分類</span></div>
@@ -35,24 +35,24 @@
 </section>
 <section class="card" id="generationTemplateSection" aria-labelledby="templatesHead"><div class="head"><div class="headmain"><span class="step">2</span><h2 id="templatesHead">共通文を選ぶ・管理する</h2></div><span id="templateCount" class="count">0件</span></div>
 <label class="label" for="templateSelect">保存済みの共通文</label><div class="row"><select id="templateSelect" class="field fill"></select><button type="button" class="btn light" id="newTemplate">＋ 新規</button></div>
-<label class="label" for="templateName">名前</label><input id="templateName" class="field" maxlength="120" placeholder="例：生成共通ルール">
+<label class="label" for="templateName">名前</label><input id="templateName" class="field" maxlength="120" placeholder="例：文章生成の基本ルール">
 <label class="label" for="templateBody">本文</label><textarea id="templateBody" class="field large" placeholder="何度も使う指示を登録できます。"></textarea>
 <div class="btn-group"><button id="saveTemplate" class="btn main" type="button">保存・更新</button><button id="duplicateTemplate" class="btn" type="button">複製</button><button id="deleteTemplate" class="btn danger" type="button">削除</button></div>
 <p class="hint"><span id="templateDirty" class="draftmark">新規作成中</span> · 共通文は生成モード専用です。未保存で切り替える場合は確認します。</p></section>
 <section class="card" id="generationContextSection" aria-labelledby="contextHead"><div class="head"><div class="headmain"><span class="step">3</span><h2 id="contextHead">作品・IFと個別の候補</h2></div></div>
 <p class="small">視点とシーンは、選択中のIFだけの候補です。別のIFに切り替えると候補も切り替わります。</p>
-<div class="picker"><div class="pickhead"><label for="worldSelect">作品・IF</label><span class="small" id="worldCount"></span></div><select id="worldSelect" class="field"></select><div class="manage"><p class="info">IFの登録・名前変更・削除</p><div class="row"><input class="field fill" id="worldEdit" maxlength="160" placeholder="例：IF（お隣）"><button id="worldAdd" class="btn light" type="button">＋ 追加</button><button id="worldRename" class="btn" type="button">変更</button><button id="worldDelete" class="btn danger" type="button">削除</button></div></div></div>
-<div class="picker"><div class="pickhead"><label for="viewpointSelect">このIFの視点</label><span class="small" id="viewpointCount"></span></div><select id="viewpointSelect" class="field"></select><div class="manage"><p class="info">現在のIFにだけ登録</p><div class="row"><input class="field fill" id="viewpointEdit" maxlength="160" placeholder="例：田中視点"><button id="viewpointAdd" class="btn light" type="button">＋ 追加</button><button id="viewpointRename" class="btn" type="button">変更</button><button id="viewpointDelete" class="btn danger" type="button">削除</button></div></div></div>
-<div class="picker"><div class="pickhead"><label for="sceneSelect">このIFのシーン</label><span class="small" id="sceneCount"></span></div><select id="sceneSelect" class="field"></select><div class="manage"><p class="info">現在のIFにだけ登録</p><div class="row"><input class="field fill" id="sceneEdit" maxlength="160" placeholder="例：#030 二年三月の誕生日"><button id="sceneAdd" class="btn light" type="button">＋ 追加</button><button id="sceneRename" class="btn" type="button">変更</button><button id="sceneDelete" class="btn danger" type="button">削除</button></div></div></div>
+<div class="picker"><div class="pickhead"><label for="worldSelect">作品・IF</label><span class="small" id="worldCount"></span></div><select id="worldSelect" class="field"></select><div class="manage"><p class="info">IFの登録・名前変更・削除</p><div class="row"><input class="field fill" id="worldEdit" maxlength="160" placeholder="例：作品名A"><button id="worldAdd" class="btn light" type="button">＋ 追加</button><button id="worldRename" class="btn" type="button">変更</button><button id="worldDelete" class="btn danger" type="button">削除</button></div></div></div>
+<div class="picker"><div class="pickhead"><label for="viewpointSelect">このIFの視点</label><span class="small" id="viewpointCount"></span></div><select id="viewpointSelect" class="field"></select><div class="manage"><p class="info">現在のIFにだけ登録</p><div class="row"><input class="field fill" id="viewpointEdit" maxlength="160" placeholder="例：A視点"><button id="viewpointAdd" class="btn light" type="button">＋ 追加</button><button id="viewpointRename" class="btn" type="button">変更</button><button id="viewpointDelete" class="btn danger" type="button">削除</button></div></div></div>
+<div class="picker"><div class="pickhead"><label for="sceneSelect">このIFのシーン</label><span class="small" id="sceneCount"></span></div><select id="sceneSelect" class="field"></select><div class="manage"><p class="info">現在のIFにだけ登録</p><div class="row"><input class="field fill" id="sceneEdit" maxlength="160" placeholder="例：出会い"><button id="sceneAdd" class="btn light" type="button">＋ 追加</button><button id="sceneRename" class="btn" type="button">変更</button><button id="sceneDelete" class="btn danger" type="button">削除</button></div></div></div>
 <div id="legacyPanel" class="legacy-area hidden"><strong>以前のバージョンから引き継いだ未分類候補</strong><p class="info">以前はIFごとの紐付けがなかったため、勝手に割り当てず保管しています。IFを選んでから、そのIFに追加できます。</p><div class="row"><select id="legacyType" class="field fill" aria-label="未分類候補の種類"><option value="viewpoint">視点</option><option value="scene">シーン</option></select><select id="legacyChoice" class="field fill" aria-label="未分類候補"></select><button id="legacyAssign" class="btn light" type="button">このIFに追加</button><button id="legacyDiscard" class="btn danger" type="button">候補を破棄</button></div></div>
-<label id="extraLabel" class="label" for="extraInput">今回の追加指示</label><textarea id="extraInput" class="field medium" placeholder="今回だけの細かな指定を書く"></textarea><p class="hint">追加指示は一時的な作業欄です。IF・視点・シーンの登録内容はブラウザに保存します。</p></section>
+<label id="extraLabel" class="label" for="extraInput">今回の追加指示</label><textarea id="extraInput" class="field medium" placeholder="例：心理描写を詳しく"></textarea><p class="hint">追加指示は一時的な作業欄です。IF・視点・シーンの登録内容はブラウザに保存します。</p></section>
 <section class="card full" aria-labelledby="resultHead"><div class="head"><div class="headmain"><span class="step" id="resultStep">4</span><h2 id="resultHead">ChatGPTへ渡す文章</h2></div><span class="small">自動プレビュー</span></div>
 <div id="preview" class="output empty" aria-live="polite"></div><div class="btn-group"><button id="copyPreview" class="btn light" type="button">プレビューをコピー</button><button id="applyOutput" class="btn main" type="button">作業欄へ反映</button></div>
 <label class="label" for="outputText">コピー前に自由編集できる作業欄</label><textarea id="outputText" class="field edit-output" placeholder="「作業欄へ反映」を押すと完成文が入ります。"></textarea><div class="btn-group"><button id="copyOutput" class="btn main" type="button">作業欄の文章をコピー</button></div>
 </section>
 
 <section class="card full storage-card" aria-labelledby="storageHead">
-  <div class="head"><div class="headmain"><span class="step">5</span><h2 id="storageHead">データの保存・引き継ぎ</h2></div><span class="pill">v7</span></div>
+  <div class="head"><div class="headmain"><span class="step">5</span><h2 id="storageHead">データの保存・引き継ぎ</h2></div><span class="pill">v8</span></div>
   <p class="small">共通文、作品・IF、IF別の視点・シーン、各モードの設定をまとめて保管します。<strong>HTML本体と登録データは別物</strong>です。</p>
   <p class="storage-meta storage-stat" id="dataStatus" aria-live="polite">保存状況を確認しています。</p>
   <div class="storage-actions">
@@ -76,9 +76,9 @@
     <div class="storage-actions"><button id="confirmImport" class="btn main" type="button">この内容を読み込む</button><button id="cancelImport" class="btn" type="button">キャンセル</button></div>
   </div>
   <details class="storage-panel">
-    <summary>古い版からv7へ移る手順（iPad・iPhoneも同じ）</summary>
-    <ol class="storage-guide"><li><strong>以前の版</strong>を開き、「バックアップを書き出し」でJSONを保存する。</li><li><strong>新しいv7</strong>をSafariで開いて「JSONから読み込む」でそのファイルを選ぶ。</li><li>内容・件数を確認し、必要に応じて「丸ごと置き換え」を選んで実行する。</li><li>定型文とIF別候補を確認してから、新しいバックアップも保存する。</li></ol>
-    <p>ブラウザによっては以前の版とv7が同じ保存領域を使い、自動で引き継がれます。ただしHTMLファイルの開き方やURLが違うと自動移行できない場合があるため、<strong>JSONでの引き継ぎを基本</strong>にしてください。旧ファイルも、移行確認が済むまでは消さないでください。</p>
+    <summary>古い版からv8へ移る手順（iPad・iPhoneも同じ）</summary>
+    <ol class="storage-guide"><li><strong>以前の版</strong>を開き、「バックアップを書き出し」でJSONを保存する。</li><li><strong>新しいv8</strong>をSafariで開いて「JSONから読み込む」でそのファイルを選ぶ。</li><li>内容・件数を確認し、必要に応じて「丸ごと置き換え」を選んで実行する。</li><li>定型文とIF別候補を確認してから、新しいバックアップも保存する。</li></ol>
+    <p>ブラウザによっては以前の版とv8が同じ保存領域を使い、自動で引き継がれます。ただしHTMLファイルの開き方やURLが違うと自動移行できない場合があるため、<strong>JSONでの引き継ぎを基本</strong>にしてください。旧ファイルも、移行確認が済むまでは消さないでください。</p>
   </details>
   <p class="small" style="margin-top:12px">HTMLのファイルプレビューではボタンが動かない場合があります。SafariなどでWebサイトとして開いてください。この端末のブラウザ内保存には同期・永続性の保証がありません。バックアップのダウンロード開始と、実際に「ファイル」等に保存できたことは別なので、保存先を確認してください。</p>
 </section>
@@ -108,14 +108,14 @@ const BUILTIN_POLICIES=()=>Object.keys(DEFAULT_POLICY_NAMES).map(id=>({id,name:D
 const newid=()=>{try{return crypto.randomUUID()}catch(e){return 'id-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)}};
 const copy=x=>JSON.parse(JSON.stringify(x));
 const uniqueNames=(a,max=500)=>{const out=[];for(const x of Array.isArray(a)?a:[]){if(typeof x!=='string')continue;const s=x.trim().slice(0,160);if(s&&!out.includes(s))out.push(s);if(out.length>=max)break}return out};
-const defaultState=()=>({version:7,templates:[],worlds:[],unassigned:{viewpoint:[],scene:[]},rules:{generation:'',wall:'',fan:'',memo:'',casual:''},conversationPrompts:{...DEFAULT_CONVERSATION},policies:BUILTIN_POLICIES(),defaultPolicies:{...DEFAULT_POLICIES},savedAt:null});
+const defaultState=()=>({version:8,templates:[],worlds:[],unassigned:{viewpoint:[],scene:[]},rules:{generation:'',wall:'',fan:'',memo:'',casual:''},conversationPrompts:{...DEFAULT_CONVERSATION},policies:BUILTIN_POLICIES(),defaultPolicies:{...DEFAULT_POLICIES},savedAt:null});
 function normalize(src){const base=defaultState();if(!src||typeof src!=='object')return base;const templates=Array.isArray(src.templates)?src.templates.filter(t=>t&&typeof t.title==='string'&&t.title.trim()&&typeof t.body==='string').slice(0,2000).map(t=>({id:typeof t.id==='string'&&t.id?t.id:newid(),title:t.title.trim().slice(0,120),body:t.body.slice(0,200000)})):[];const used=new Set();const worlds=[];for(const w of Array.isArray(src.worlds)?src.worlds:[]){if(!w||typeof w.name!=='string')continue;const name=w.name.trim().slice(0,160);if(!name||used.has(name))continue;used.add(name);worlds.push({id:typeof w.id==='string'&&w.id?w.id:newid(),name,viewpoint:uniqueNames(w.viewpoint),scene:uniqueNames(w.scene)});if(worlds.length>=300)break}const unassigned={viewpoint:uniqueNames(src.unassigned?.viewpoint),scene:uniqueNames(src.unassigned?.scene)};const rules={};for(const k of MODES)rules[k]=typeof src.rules?.[k]==='string'?src.rules[k].slice(0,200000):'';const conversationPrompts={};for(const k of ['wall','fan','memo','casual']){const saved=src.conversationPrompts?.[k];conversationPrompts[k]=typeof saved==='string'?saved.slice(0,200000):(rules[k]||DEFAULT_CONVERSATION[k]);}const policies=[];const usedPolicyIds=new Set();
 const policySource=Array.isArray(src.policies)?src.policies:BUILTIN_POLICIES();
 for(const p of policySource){if(!p||typeof p.id!=='string'||typeof p.name!=='string'||typeof p.body!=='string')continue;const id=p.id.slice(0,120),name=p.name.trim().slice(0,120);if(!id||!name||id==='none'||usedPolicyIds.has(id))continue;policies.push({id,name,body:p.body.slice(0,200000)});usedPolicyIds.add(id);if(policies.length>=300)break}
 policies.push({id:'none',name:DEFAULT_POLICY_NAMES.none,body:''});
 const validPolicy=id=>policies.some(p=>p.id===id);
 const defaultPolicies={};for(const k of ['wall','fan','memo','casual']){const chosen=src.defaultPolicies?.[k];const fallback=DEFAULT_POLICIES[k];defaultPolicies[k]=typeof chosen==='string'&&validPolicy(chosen)?chosen:(validPolicy(fallback)?fallback:'none')}
-return {version:7,templates,worlds:src.worlds?worlds:base.worlds,unassigned,rules,conversationPrompts,policies,defaultPolicies,savedAt:typeof src.savedAt==='string'?src.savedAt:null}}
+return {version:8,templates,worlds:src.worlds?worlds:base.worlds,unassigned,rules,conversationPrompts,policies,defaultPolicies,savedAt:typeof src.savedAt==='string'?src.savedAt:null}}
 function convertOld(oldTemplates,oldOptions){const base=defaultState();const old=Array.isArray(oldTemplates)?oldTemplates:[];base.templates=old.filter(t=>t&&typeof t.title==='string'&&t.title.trim()&&typeof t.body==='string').slice(0,2000).map(t=>({id:typeof t.id==='string'?t.id:newid(),title:t.title.trim().slice(0,120),body:t.body.slice(0,200000)}));if(oldOptions&&typeof oldOptions==='object'){
 const names=uniqueNames(oldOptions.world,300);if(names.length)base.worlds=names.map(name=>({id:newid(),name,viewpoint:[],scene:[]}));base.unassigned.viewpoint=uniqueNames(oldOptions.viewpoint);base.unassigned.scene=uniqueNames(oldOptions.scene)}return base}
 let state=defaultState(),storageOK=true,selectedTemplate='',templateDraft={id:newid(),title:'',body:''},mode='generation',submode='wall',policyChoice='source',policyEditId='',policyDraft={id:'',name:'',body:''},worldId='',selected={viewpoint:'',scene:''},toastTimer,pendingImport=null,loadSource='新規データ';
@@ -153,11 +153,11 @@ const persist=()=>{
    const prior=localStorage.getItem(STORE);
    if(prior)localStorage.setItem(CHECKPOINT,prior);
    const savedAt=new Date().toISOString();
-   state.version=7;state.savedAt=savedAt;
+   state.version=8;state.savedAt=savedAt;
    const encoded=JSON.stringify(state);
    localStorage.setItem(STORE,encoded);
    if(localStorage.getItem(STORE)!==encoded)throw Error('保存の読み戻しに失敗');
-   loadSource='v7の保存データ';renderDataStatus();return true;
+   loadSource='v8の保存データ';renderDataStatus();return true;
  }catch(e){reportStorage('保存に失敗しました。編集中の内容は画面に残っていますが、ブラウザには保存できていません。JSONバックアップを作成してください。');renderDataStatus();return false}
 };
 const savedTemplate=()=>state.templates.find(t=>t.id===selectedTemplate)||null;
@@ -212,11 +212,11 @@ function mergeImport(imported){
  for(const k of ['wall','fan','memo','casual']){if(state.defaultPolicies[k]===DEFAULT_POLICIES[k]&&imported.defaultPolicies[k]!==DEFAULT_POLICIES[k]){const candidate=mapped[imported.defaultPolicies[k]];if(candidate&&getPolicy(candidate))state.defaultPolicies[k]=candidate}}
  return state.templates.length-oldCount;
 }
-function exportPayload(){return {...copy(state),version:7,app:'Prompt Shelf',format:'prompt-shelf-backup',exportedAt:new Date().toISOString()}}
+function exportPayload(){return {...copy(state),version:8,app:'Prompt Shelf',format:'prompt-shelf-backup',exportedAt:new Date().toISOString()}}
 function makeExportText(){return JSON.stringify(exportPayload(),null,2)}
 function exportData(){
  const blob=new Blob([makeExportText()],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
- a.href=url;a.download='prompt-shelf-v7-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+ a.href=url;a.download='prompt-shelf-v8-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
  toast('書き出しを開始しました。保存先にJSONがあるか確認してください。');
 }
 function fillBackup(){ $('manualBackupDetails').open=true;$('manualBackupText').value=makeExportText();toast('現在の全データを表示しました') }
@@ -229,7 +229,7 @@ function parseImport(text){
    const converted=convertOld(raw,null);converted.worlds=[];return {data:converted,version:1,date:'不明'};
  }
  if(!raw||typeof raw!=='object'||raw.app!=='Prompt Shelf')throw Error('Prompt Shelfのバックアップではありません');
- if(!Number.isInteger(raw.version)||raw.version<1||raw.version>7)throw Error('対応していないバージョンです（v1〜v7に対応）');
+ if(!Number.isInteger(raw.version)||raw.version<1||raw.version>8)throw Error('対応していないバージョンです（v1〜v8に対応）');
  if(!Array.isArray(raw.templates)||!raw.templates.every(t=>t&&typeof t.title==='string'&&typeof t.body==='string'))throw Error('共通文の形式が不正です');
  if(raw.version>=4){
     if(!validateShape(raw))throw Error('IFや候補の形式が不正です');
