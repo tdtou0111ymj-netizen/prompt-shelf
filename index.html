@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<title>Prompt Shelf v12 | 整理結果の保存庫</title>
+<title>Prompt Shelf v13 | 二段階生成とGoogle Drive単発セーブ</title>
 <style>
 :root{--ink:#213449;--muted:#65778a;--line:#dce5ef;--blue:#2a648e;--blue-2:#e9f2f9;--bg:#f4f7f9;--card:#fff;--danger:#a74648;--ok:#347664;--shadow:0 10px 25px rgba(29,60,82,.045)}
 *{box-sizing:border-box}html,body{min-height:100%;margin:0}body{background:linear-gradient(135deg,#edf4f8 0,#f9fafb 49%,#eef5f5 100%);color:var(--ink);font:14px/1.65 -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.38}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid #9bc8e2;outline-offset:2px}
@@ -63,6 +63,15 @@
 .batch-status{font-size:11px;color:var(--muted);margin-top:7px}
 @media(max-width:520px){.history-batch{padding:11px}.batch-actions .btn{flex:1 1 46%}.batch-head{align-items:start}.history-meta{flex-wrap:wrap}}
 
+/* v13: separate generation stages and one-scene Drive save */
+.stage-switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:5px 0 12px}
+.stage-btn{border:1px solid #d7e3ed;border-radius:12px;background:#f5f8fb;min-height:64px;text-align:left;padding:12px;color:#36516a;font-size:13px;font-weight:750;line-height:1.4;cursor:pointer;overflow-wrap:anywhere}
+.stage-btn small{font-size:11px;font-weight:500;color:#607589}
+.stage-btn.active{background:#eaf4fc;border-color:#76b2d9;color:#154f75;box-shadow:inset 0 0 0 1px #76b2d9}
+.stage-hint{font-size:12px;color:var(--muted);line-height:1.6;margin:8px 0 12px}
+.stage-save{padding:14px;border:1px solid #d4e5ef;background:#f5fafc;border-radius:13px;margin:12px 0}
+.stage-save strong{font-size:13px}.stage-save .info{line-height:1.7;margin:8px 0}
+@media(max-width:520px){.stage-switch{gap:6px}.stage-btn{padding:9px;font-size:12px;min-height:70px}}
 /* v12: separate archive for ChatGPT's manually pasted organizational results */
 .result-vault{scroll-margin-top:12px}
 .result-vault h3{margin:0}
@@ -85,7 +94,7 @@
 </head>
 <body>
 <div class="shell">
-<header class="top"><div><div class="eyebrow">PROMPT SHELF / V12</div><h1>定型文とモード</h1><p class="intro">生成は定型文とIF指定、会話は本文と返答スタイル。書き込みを自動保存し、作品・時点・タグで探せます。</p></div><span class="status" id="status">保存状況を確認中</span></header>
+<header class="top"><div><div class="eyebrow">PROMPT SHELF / V13</div><h1>定型文とモード</h1><p class="intro">生成は二段階の共通文を使い分け、完成シーンだけDriveへ保存。会話・履歴・整理結果の機能もそのまま使えます。</p></div><span class="status" id="status">保存状況を確認中</span></header>
 <div id="warning" class="alert hidden" role="alert">この開き方ではブラウザへの保存を確認できません。作業が終わる前に必ずバックアップを書き出すか、文字列をコピーしてください。</div>
 <main class="layout">
 <section class="card full" aria-labelledby="modeHead"><div class="head"><div class="headmain"><span class="step">1</span><h2 id="modeHead">モードを選ぶ</h2></div><span class="pill">2つの大分類</span></div>
@@ -103,7 +112,12 @@
 <div class="modebox"><strong id="modeDisplay">生成モード</strong><p class="modeexplain" id="modeExplanation">場面生成など、文章を作ってもらうための依頼文を組み立てます。</p><details><summary id="modeRuleSummary">このモード用の追加ルールを登録・編集</summary><p class="info" id="modeRuleHelp">モードごとに独立して保存されます。</p><textarea id="modeRule" class="field medium" placeholder="このモードでいつも添えたい指示を入力"></textarea><div class="btn-group"><button class="btn light" id="saveModeRule" type="button">このモードの文を保存</button><button class="btn" id="restoreModeRule" type="button">標準文に戻す</button><button class="btn danger" id="clearModeRule" type="button">空欄にする</button></div></details></div>
 </section>
 <section class="card" id="generationTemplateSection" aria-labelledby="templatesHead"><div class="head"><div class="headmain"><span class="step">2</span><h2 id="templatesHead">共通文を選ぶ・管理する</h2></div><span id="templateCount" class="count">0件</span></div>
-<label class="label" for="templateSelect">保存済みの共通文</label><div class="row"><select id="templateSelect" class="field fill"></select><button type="button" class="btn light" id="copyTemplateBody">本文だけコピー</button><button type="button" class="btn light" id="newTemplate">＋ 新規</button></div>
+<div class="stage-switch" role="group" aria-label="文章生成の段階">
+  <button id="stageDraft" class="stage-btn active" type="button" aria-pressed="true">① 内容を詰める<br><small>第一段階・保存しない</small></button>
+  <button id="stageFinal" class="stage-btn" type="button" aria-pressed="false">② 文章を完成させる<br><small>第二段階・完成時に保存</small></button>
+</div>
+<p id="stageHint" class="stage-hint">この段階で使う共通文を選びます。選択は段階ごとに記憶されます。</p>
+<label class="label" for="templateSelect">この段階の共通文（段階ごとに選択を記憶）</label><div class="row"><select id="templateSelect" class="field fill"></select><button type="button" class="btn light" id="copyTemplateBody">本文だけコピー</button><button type="button" class="btn light" id="newTemplate">＋ 新規</button></div>
 <label class="label" for="templateName">名前</label><input id="templateName" class="field" maxlength="120" placeholder="例：文章生成の基本ルール">
 <label class="label" for="templateBody">本文</label><textarea id="templateBody" class="field large" placeholder="何度も使う指示を登録できます。"></textarea>
 <div class="btn-group"><button id="saveTemplate" class="btn main" type="button">保存・更新</button><button id="duplicateTemplate" class="btn" type="button">複製</button><button id="deleteTemplate" class="btn danger" type="button">削除</button></div>
@@ -113,6 +127,14 @@
 <div class="picker"><div class="pickhead"><label for="worldSelect">作品・IF</label><span class="small" id="worldCount"></span></div><select id="worldSelect" class="field"></select><div class="manage"><p class="info">IFの登録・名前変更・削除</p><div class="row"><input class="field fill" id="worldEdit" maxlength="160" placeholder="例：作品名A"><button id="worldAdd" class="btn light" type="button">＋ 追加</button><button id="worldRename" class="btn" type="button">変更</button><button id="worldDelete" class="btn danger" type="button">削除</button></div></div></div>
 <div class="picker"><div class="pickhead"><label for="viewpointSelect">このIFの視点</label><span class="small" id="viewpointCount"></span></div><select id="viewpointSelect" class="field"></select><div class="manage"><p class="info">現在のIFにだけ登録</p><div class="row"><input class="field fill" id="viewpointEdit" maxlength="160" placeholder="例：A視点"><button id="viewpointAdd" class="btn light" type="button">＋ 追加</button><button id="viewpointRename" class="btn" type="button">変更</button><button id="viewpointDelete" class="btn danger" type="button">削除</button></div></div></div>
 <div class="picker"><div class="pickhead"><label for="sceneSelect">このIFのシーン</label><span class="small" id="sceneCount"></span></div><select id="sceneSelect" class="field"></select><div class="manage"><p class="info">現在のIFにだけ登録</p><div class="row"><input class="field fill" id="sceneEdit" maxlength="160" placeholder="例：出会い"><button id="sceneAdd" class="btn light" type="button">＋ 追加</button><button id="sceneRename" class="btn" type="button">変更</button><button id="sceneDelete" class="btn danger" type="button">削除</button></div></div></div>
+<div id="stageSavePanel" class="stage-save hidden">
+  <strong>第二段階：完成シーンの単発セーブ</strong>
+  <p class="info">完成した1シーンだけをGoogle Driveの「生成物保存」以下へ新規保存。フォルダIDは登録不要、上書きなし。保存指示はコピーする依頼文へ自動追加されます。</p>
+  <label class="label" for="saveTitleInput">保存用の題名（任意）</label>
+  <input id="saveTitleInput" class="field" maxlength="160" placeholder="空欄なら選択中のシーン名を使う">
+  <p class="info" id="saveDestinationHint">作品・IFを選ぶと、その名前から保存先を探します。</p>
+  <p class="info">ファイル名：<code>YYYY-MM-DD_HH-mm_題名</code>（保存時の日本時間）。題名がなければ完成本文から短い題名を決定します。</p>
+</div>
 <div id="legacyPanel" class="legacy-area hidden"><strong>以前のバージョンから引き継いだ未分類候補</strong><p class="info">以前はIFごとの紐付けがなかったため、勝手に割り当てず保管しています。IFを選んでから、そのIFに追加できます。</p><div class="row"><select id="legacyType" class="field fill" aria-label="未分類候補の種類"><option value="viewpoint">視点</option><option value="scene">シーン</option></select><select id="legacyChoice" class="field fill" aria-label="未分類候補"></select><button id="legacyAssign" class="btn light" type="button">このIFに追加</button><button id="legacyDiscard" class="btn danger" type="button">候補を破棄</button></div></div>
 <label id="extraLabel" class="label" for="extraInput">今回の追加指示</label><textarea id="extraInput" class="field medium" placeholder="例：心理描写を詳しく"></textarea><p class="hint">追加指示は一時的な作業欄です。IF・視点・シーンの登録内容はブラウザに保存します。</p></section>
 <section class="card full" id="composerSection" aria-labelledby="composerHead">
@@ -214,7 +236,7 @@
 </section>
 
 <section class="card full storage-card" aria-labelledby="storageHead">
-  <div class="head"><div class="headmain"><span class="step">保存</span><h2 id="storageHead">データの保存・引き継ぎ</h2></div><span class="pill">v12</span></div>
+  <div class="head"><div class="headmain"><span class="step">保存</span><h2 id="storageHead">データの保存・引き継ぎ</h2></div><span class="pill">v13</span></div>
   <p class="small">共通文・IF・時点・タグ候補・各モード設定に加え、下書き・書き込み履歴・整理結果の保存庫もまとめて保管します。<strong>HTML本体と登録データは別物</strong>です。</p>
   <p class="storage-meta storage-stat" id="dataStatus" aria-live="polite">保存状況を確認しています。</p>
   <div class="storage-actions">
@@ -238,8 +260,8 @@
     <div class="storage-actions"><button id="confirmImport" class="btn main" type="button">この内容を読み込む</button><button id="cancelImport" class="btn" type="button">キャンセル</button></div>
   </div>
   <details class="storage-panel">
-    <summary>古い版からv12へ移る手順（iPad・iPhoneも同じ）</summary>
-    <ol class="storage-guide"><li><strong>以前の版</strong>を開き、「バックアップを書き出し」でJSONを保存する。</li><li><strong>新しいv12</strong>をSafariで開いて「JSONから読み込む」でそのファイルを選ぶ。</li><li>内容・件数を確認し、必要に応じて「丸ごと置き換え」を選んで実行する。</li><li>定型文とIF別候補を確認してから、新しいバックアップも保存する。</li></ol>
+    <summary>古い版からv13へ移る手順（iPad・iPhoneも同じ）</summary>
+    <ol class="storage-guide"><li><strong>以前の版</strong>を開き、「バックアップを書き出し」でJSONを保存する。</li><li><strong>新しいv13</strong>をSafariで開いて「JSONから読み込む」でそのファイルを選ぶ。</li><li>内容・件数を確認し、必要に応じて「丸ごと置き換え」を選んで実行する。</li><li>定型文とIF別候補を確認してから、新しいバックアップも保存する。</li></ol>
     <p>ブラウザによっては以前の版とv12が同じ保存領域を使い、自動で引き継がれます。ただしHTMLファイルの開き方やURLが違うと自動移行できない場合があるため、<strong>JSONでの引き継ぎを基本</strong>にしてください。旧ファイルも、移行確認が済むまでは消さないでください。</p>
   </details>
   <p class="small" style="margin-top:12px">HTMLのファイルプレビューではボタンが動かない場合があります。SafariなどでWebサイトとして開いてください。この端末のブラウザ内保存（設定・下書きはlocalStorage、履歴と整理結果はIndexedDB）には同期・永続性の保証がありません。バックアップのダウンロード開始と、実際に「ファイル」等に保存できたことは別なので、保存先を確認してください。</p>
@@ -271,17 +293,18 @@ const BUILTIN_POLICIES=()=>Object.keys(DEFAULT_POLICY_NAMES).map(id=>({id,name:D
 const newid=()=>{try{return crypto.randomUUID()}catch(e){return 'id-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)}};
 const copy=x=>JSON.parse(JSON.stringify(x));
 const uniqueNames=(a,max=500)=>{const out=[];for(const x of Array.isArray(a)?a:[]){if(typeof x!=='string')continue;const s=x.trim().slice(0,160);if(s&&!out.includes(s))out.push(s);if(out.length>=max)break}return out};
-const defaultState=()=>({version:12,batchPrompt:DEFAULT_BATCH_PROMPT,templates:[],worlds:[],periodOptions:[],tags:[],unassigned:{viewpoint:[],scene:[]},rules:{generation:'',wall:'',fan:'',memo:'',casual:''},conversationPrompts:{...DEFAULT_CONVERSATION},policies:BUILTIN_POLICIES(),defaultPolicies:{...DEFAULT_POLICIES},savedAt:null});
+const defaultState=()=>({version:13,stageTemplates:{draft:'',final:''},batchPrompt:DEFAULT_BATCH_PROMPT,templates:[],worlds:[],periodOptions:[],tags:[],unassigned:{viewpoint:[],scene:[]},rules:{generation:'',wall:'',fan:'',memo:'',casual:''},conversationPrompts:{...DEFAULT_CONVERSATION},policies:BUILTIN_POLICIES(),defaultPolicies:{...DEFAULT_POLICIES},savedAt:null});
 function normalize(src){const base=defaultState();if(!src||typeof src!=='object')return base;const templates=Array.isArray(src.templates)?src.templates.filter(t=>t&&typeof t.title==='string'&&t.title.trim()&&typeof t.body==='string').slice(0,2000).map(t=>({id:typeof t.id==='string'&&t.id?t.id:newid(),title:t.title.trim().slice(0,120),body:t.body.slice(0,200000)})):[];const used=new Set();const worlds=[];for(const w of Array.isArray(src.worlds)?src.worlds:[]){if(!w||typeof w.name!=='string')continue;const name=w.name.trim().slice(0,160);if(!name||used.has(name))continue;used.add(name);worlds.push({id:typeof w.id==='string'&&w.id?w.id:newid(),name,viewpoint:uniqueNames(w.viewpoint),scene:uniqueNames(w.scene)});if(worlds.length>=300)break}const unassigned={viewpoint:uniqueNames(src.unassigned?.viewpoint),scene:uniqueNames(src.unassigned?.scene)};const rules={};for(const k of MODES)rules[k]=typeof src.rules?.[k]==='string'?src.rules[k].slice(0,200000):'';const conversationPrompts={};for(const k of ['wall','fan','memo','casual']){const saved=src.conversationPrompts?.[k];conversationPrompts[k]=typeof saved==='string'?saved.slice(0,200000):(rules[k]||DEFAULT_CONVERSATION[k]);}const policies=[];const usedPolicyIds=new Set();
 const policySource=Array.isArray(src.policies)?src.policies:BUILTIN_POLICIES();
 for(const p of policySource){if(!p||typeof p.id!=='string'||typeof p.name!=='string'||typeof p.body!=='string')continue;const id=p.id.slice(0,120),name=p.name.trim().slice(0,120);if(!id||!name||id==='none'||usedPolicyIds.has(id))continue;policies.push({id,name,body:p.body.slice(0,200000)});usedPolicyIds.add(id);if(policies.length>=300)break}
 policies.push({id:'none',name:DEFAULT_POLICY_NAMES.none,body:''});
 const validPolicy=id=>policies.some(p=>p.id===id);
 const defaultPolicies={};for(const k of ['wall','fan','memo','casual']){const chosen=src.defaultPolicies?.[k];const fallback=DEFAULT_POLICIES[k];defaultPolicies[k]=typeof chosen==='string'&&validPolicy(chosen)?chosen:(validPolicy(fallback)?fallback:'none')}
-return {version:12,batchPrompt:typeof src.batchPrompt==='string'?src.batchPrompt.slice(0,20000):DEFAULT_BATCH_PROMPT,templates,worlds:src.worlds?worlds:base.worlds,periodOptions:uniqueNames(src.periodOptions),tags:uniqueNames(src.tags),unassigned,rules,conversationPrompts,policies,defaultPolicies,savedAt:typeof src.savedAt==='string'?src.savedAt:null}}
+const stageTemplates={draft:'',final:''};for(const key of ['draft','final']){const value=src.stageTemplates?.[key];if(typeof value==='string'&&templates.some(t=>t.id===value))stageTemplates[key]=value}
+return {version:13,stageTemplates,batchPrompt:typeof src.batchPrompt==='string'?src.batchPrompt.slice(0,20000):DEFAULT_BATCH_PROMPT,templates,worlds:src.worlds?worlds:base.worlds,periodOptions:uniqueNames(src.periodOptions),tags:uniqueNames(src.tags),unassigned,rules,conversationPrompts,policies,defaultPolicies,savedAt:typeof src.savedAt==='string'?src.savedAt:null}}
 function convertOld(oldTemplates,oldOptions){const base=defaultState();const old=Array.isArray(oldTemplates)?oldTemplates:[];base.templates=old.filter(t=>t&&typeof t.title==='string'&&t.title.trim()&&typeof t.body==='string').slice(0,2000).map(t=>({id:typeof t.id==='string'?t.id:newid(),title:t.title.trim().slice(0,120),body:t.body.slice(0,200000)}));if(oldOptions&&typeof oldOptions==='object'){
 const names=uniqueNames(oldOptions.world,300);if(names.length)base.worlds=names.map(name=>({id:newid(),name,viewpoint:[],scene:[]}));base.unassigned.viewpoint=uniqueNames(oldOptions.viewpoint);base.unassigned.scene=uniqueNames(oldOptions.scene)}return base}
-let state=defaultState(),storageOK=true,selectedTemplate='',templateDraft={id:newid(),title:'',body:''},mode='generation',submode='wall',policyChoice='source',policyEditId='',policyDraft={id:'',name:'',body:''},worldId='',selected={viewpoint:'',scene:''},toastTimer,pendingImport=null,loadSource='新規データ';
+let state=defaultState(),storageOK=true,generationStage='draft',selectedTemplate='',templateDraft={id:newid(),title:'',body:''},mode='generation',submode='wall',policyChoice='source',policyEditId='',policyDraft={id:'',name:'',body:''},worldId='',selected={viewpoint:'',scene:''},toastTimer,pendingImport=null,loadSource='新規データ';
 
 // Separate from the legacy v8 configuration key: old registrations are preserved.
 const DRAFT_STORE='prompt-shelf:message-drafts:v9';
@@ -289,9 +312,9 @@ const UI_STORE='prompt-shelf:mode-preference:v9';
 const JOURNAL_DB='prompt-shelf:writing-journal:v9';
 const JOURNAL_STORE='entries',RESULT_STORE='organizedResults';
 const RESULT_DRAFT_STORE='prompt-shelf:result-draft:v12';
-const emptyDraft=()=>({body:'',extra:'',output:'',worldId:'',period:'',tags:[]});
+const emptyDraft=()=>({body:'',extra:'',output:'',saveTitle:'',worldId:'',period:'',tags:[]});
 const emptyDrafts=()=>Object.fromEntries(MODES.map(k=>[k,emptyDraft()]));
-const normalizeDrafts=src=>{const all=emptyDrafts();if(src&&typeof src==='object')for(const k of MODES){const entry=src[k];if(entry&&typeof entry==='object'){for(const f of ['body','extra','output'])if(typeof entry[f]==='string')all[k][f]=entry[f].slice(0,300000);if(typeof entry.worldId==='string')all[k].worldId=entry.worldId.slice(0,150);if(typeof entry.period==='string')all[k].period=entry.period.slice(0,160);all[k].tags=uniqueNames(entry.tags)}}return all};
+const normalizeDrafts=src=>{const all=emptyDrafts();if(src&&typeof src==='object')for(const k of MODES){const entry=src[k];if(entry&&typeof entry==='object'){for(const f of ['body','extra','output','saveTitle'])if(typeof entry[f]==='string')all[k][f]=entry[f].slice(0,300000);if(typeof entry.worldId==='string')all[k].worldId=entry.worldId.slice(0,150);if(typeof entry.period==='string')all[k].period=entry.period.slice(0,160);all[k].tags=uniqueNames(entry.tags)}}return all};
 let drafts=emptyDrafts(),draftStorageOK=true,draftSaveTimer=null,bodySwitching=false;
 let journalDb=null,journalReady=false,journalEntries=[],journalPageSize=50,journalError='';
 let selectedHistoryIds=new Set();
@@ -299,8 +322,8 @@ let resultEntries=[],resultPageSize=30,resultDraftTimer=null;
 const RESULT_STATUSES={undecided:'未判定',adopted:'採用',pending:'保留',rejected:'却下'};
 const emptyResultDraft=()=>({id:'',title:'',body:'',world:'',period:'',status:'undecided',tags:[],sourceIds:[]});
 let resultDraft=emptyResultDraft();
-function rememberMode(){try{localStorage.setItem(UI_STORE,JSON.stringify({mode,submode}))}catch(e){}}
-function restoreMode(){try{const pref=JSON.parse(localStorage.getItem(UI_STORE)||'null');if(pref?.mode==='conversation')mode='conversation';if(MODES.includes(pref?.submode)&&pref.submode!=='generation')submode=pref.submode}catch(e){}}
+function rememberMode(){try{localStorage.setItem(UI_STORE,JSON.stringify({mode,submode,generationStage,worldId}))}catch(e){}}
+function restoreMode(){try{const pref=JSON.parse(localStorage.getItem(UI_STORE)||'null');if(pref?.mode==='conversation')mode='conversation';if(MODES.includes(pref?.submode)&&pref.submode!=='generation')submode=pref.submode;if(pref?.generationStage==='final')generationStage='final';if(typeof pref?.worldId==='string'&&state.worlds.some(w=>w.id===pref.worldId))worldId=pref.worldId}catch(e){}}
 function setDraftState(text,error=false){const el=$('draftStatus');el.textContent=text;el.classList.toggle('error',error)}
 try{const raw=localStorage.getItem(DRAFT_STORE);if(raw)drafts=normalizeDrafts(JSON.parse(raw))}catch(e){draftStorageOK=false}
 function draftPayload(){return JSON.stringify(drafts)}
@@ -309,8 +332,8 @@ function saveDraftNow(){clearTimeout(draftSaveTimer);if(!draftStorageOK){setDraf
   catch(e){draftStorageOK=false;setDraftState('下書きの保存に失敗しました。必ず文章をコピーして退避してください。',true);return false}}
 function queueDraftSave(){setDraftState('下書きを保存中…');clearTimeout(draftSaveTimer);draftSaveTimer=setTimeout(saveDraftNow,180)}
 function activeDraft(){return drafts[activeMode()]}
-function captureDraft(){if(bodySwitching)return;const d=activeDraft();d.body=$('messageBody').value;if(mode==='generation'){d.extra=$('extraInput').value;d.output=$('outputText').value}queueDraftSave()}
-function loadActiveDraft(){bodySwitching=true;const d=activeDraft();$('messageBody').value=d.body;$('extraInput').value=drafts.generation.extra;$('outputText').value=drafts.generation.output;bodySwitching=false;renderMetadata();setDraftState(draftStorageOK?'下書きと分類は自動保存されます（このブラウザ内）':'下書きの保存は利用できません。',!draftStorageOK)}
+function captureDraft(){if(bodySwitching)return;const d=activeDraft();d.body=$('messageBody').value;if(mode==='generation'){d.extra=$('extraInput').value;d.output=$('outputText').value;d.saveTitle=$('saveTitleInput').value}queueDraftSave()}
+function loadActiveDraft(){bodySwitching=true;const d=activeDraft();$('messageBody').value=d.body;$('extraInput').value=drafts.generation.extra;$('outputText').value=drafts.generation.output;$('saveTitleInput').value=drafts.generation.saveTitle;bodySwitching=false;renderMetadata();setDraftState(draftStorageOK?'下書きと分類は自動保存されます（このブラウザ内）':'下書きの保存は利用できません。',!draftStorageOK)}
 // Metadata stays out of the copied prompt. Each conversation mode keeps its own selections.
 function metadataWorldName(){return mode==='generation'?(world()?.name||''):(state.worlds.find(w=>w.id===activeDraft().worldId)?.name||'')}
 function metaSelectOptions(id,base,candidates,wanted){const el=$(id);el.replaceChildren(new Option(base,'_none_'));for(const v of candidates)el.add(new Option(v,v));el.value=candidates.includes(wanted)?wanted:'_none_'}
@@ -402,7 +425,22 @@ async function recordHistory(fullText,body){if(!journalReady)return false;const 
  try{await journalTransaction('add',[entry]);journalEntries.unshift(entry);renderHistory();return true}catch(e){setJournalStatus('履歴保存に失敗しました。JSONバックアップを確認してください。',true);return false}}
 async function copyWithHistory(txt,body){captureDraft();saveDraftNow();const ok=await copyText(txt);if(!ok)return;const content=(body===undefined?$('messageBody').value.trim():body.trim())||(mode==='generation'?$('extraInput').value.trim():'');
  const saved=await recordHistory(txt,content);if(!saved)toast('コピーしました。ただし履歴保存に失敗しました。');else toast('コピーして履歴に保存しました')}
-function instructionsOnly(){const parts=[];if(mode==='conversation'){parts.push('【会話モード】\n'+SUBMODES.find(s=>s.id===submode).name);const basic=(state.conversationPrompts[submode]??DEFAULT_CONVERSATION[submode]).trim();if(basic)parts.push(basic);const policy=getPolicy(policyChoice);if(policy?.body)parts.push('【今回の返答方針】\n'+policy.body)}else{parts.push('【モード】\n生成');const r=(state.rules.generation||'').trim();if(r)parts.push(r);if(templateDraft.body.trim())parts.push(templateDraft.body.trim());const w=world();if(w)parts.push('【作品・IF】\n'+w.name);for(const key of ['viewpoint','scene'])if(w&&selected[key])parts.push('【'+(key==='viewpoint'?'視点':'シーン')+'】\n'+selected[key]);const extra=$('extraInput').value.trim();if(extra)parts.push('【今回の追加指示】\n'+extra)}return parts.join('\n\n')}
+function singleSceneSaveRule(){
+ const w=world();
+ if(!w)return '【Google Drive保存】\n作品・IFが選択されていないため、保存先を確定できません。今回の完成本文は生成して構いませんが、Google Driveへは保存せず、作品・IFが未指定であることを報告してください。';
+ const title=$('saveTitleInput').value.trim()||selected.scene||'';
+ const titleRule=title?'保存ファイルの題名部分には「'+title+'」を用いてください。':'題名部分は完成したシーンにふさわしい短い題名を付けてください（本文には題名を追加しないでください）。';
+ return [
+ '【完成シーンのGoogle Drive単発セーブ】',
+ 'これは第二段階です。今回の依頼に対して一つの完成シーン本文が仕上がった場合に限り、生成したその1シーンだけをGoogle DriveのGoogleドキュメントとして新規保存してください。構成の相談・部分修正・未完成稿の提示だけの場合は保存しないでください。第一段階の原稿や過去のシーンをまとめて保存しないでください。',
+ '保存先：Google Driveの「生成物保存」フォルダ以下から、作品・IF名「'+w.name+'」と完全一致するフォルダを探索してください。途中の階層は固定しません。候補の親子関係を確認し、一意に特定できる場合だけ保存してください。見つからない／複数候補が残る場合は、フォルダを勝手に作らず保存を中止して理由を報告してください。',
+ 'ファイル名：保存処理を行う時点の日本時間（Asia/Tokyo、JST）の年月日と時分を確認し、「YYYY-MM-DD_HH-mm_題名」としてください。'+titleRule+'日時は推測しないでください。題名にファイル名に不向きな文字がある場合だけ安全な文字に置き換えてください。',
+ '同じ名前の既存ファイルがあれば上書き・更新せず、末尾に「_02」「_03」等を追加して必ず新規作成してください。作品設定資料・正式SAVE番号・既存のドキュメントを変更しないでください。',
+ '保存するドキュメントの内容は完成した小説本文のみです。プロンプト、説明、検証報告、メタ情報を混ぜないでください。',
+ '保存後、可能ならGoogle Driveから本文を読み戻して生成本文と照合してください。成功したらファイル名・保存先・リンク・照合結果を報告してください。保存失敗時は失敗と理由を明示し、保存できていないのに成功とは言わないでください。'
+ ].join('\n');
+}
+function instructionsOnly(){const parts=[];if(mode==='conversation'){parts.push('【会話モード】\n'+SUBMODES.find(s=>s.id===submode).name);const basic=(state.conversationPrompts[submode]??DEFAULT_CONVERSATION[submode]).trim();if(basic)parts.push(basic);const policy=getPolicy(policyChoice);if(policy?.body)parts.push('【今回の返答方針】\n'+policy.body)}else{parts.push('【モード】\n生成');parts.push(generationStage==='draft'?'【生成段階】\n第一段階：内容・構成を検討します。完成原稿として扱わず、Google Driveには保存しないでください。':'【生成段階】\n第二段階：文章を完成させます。完成本文になった場合のみ、この依頼に付く保存ルールに従ってください。');const r=(state.rules.generation||'').trim();if(r)parts.push(r);if(templateDraft.body.trim())parts.push(templateDraft.body.trim());const w=world();if(w)parts.push('【作品・IF】\n'+w.name);for(const key of ['viewpoint','scene'])if(w&&selected[key])parts.push('【'+(key==='viewpoint'?'視点':'シーン')+'】\n'+selected[key]);const extra=$('extraInput').value.trim();if(extra)parts.push('【今回の追加指示】\n'+extra);if(generationStage==='final')parts.push(singleSceneSaveRule())}return parts.join('\n\n')}
 
 // v12: a separate, optional record of ChatGPT's organizational replies.
 function normalizeResultDraft(x){const base=emptyResultDraft();if(!x||typeof x!=='object')return base;return {id:typeof x.id==='string'?x.id.slice(0,150):'',title:typeof x.title==='string'?x.title.slice(0,160):'',body:typeof x.body==='string'?x.body.slice(0,500000):'',world:typeof x.world==='string'?x.world.slice(0,160):'',period:typeof x.period==='string'?x.period.slice(0,160):'',status:RESULT_STATUSES[x.status]?x.status:'undecided',tags:uniqueNames(x.tags,30),sourceIds:Array.isArray(x.sourceIds)?[...new Set(x.sourceIds.filter(y=>typeof y==='string').map(y=>y.slice(0,150)))].slice(0,3000):[]}}
@@ -463,22 +501,32 @@ const persist=()=>{
    const prior=localStorage.getItem(STORE);
    if(prior)localStorage.setItem(CHECKPOINT,prior);
    const savedAt=new Date().toISOString();
-   state.version=10;state.savedAt=savedAt;
+   state.version=13;state.savedAt=savedAt;
    const encoded=JSON.stringify(state);
    localStorage.setItem(STORE,encoded);
    if(localStorage.getItem(STORE)!==encoded)throw Error('保存の読み戻しに失敗');
-   loadSource='v10の保存データ';renderDataStatus();return true;
+   loadSource='保存済みデータ';renderDataStatus();return true;
  }catch(e){reportStorage('保存に失敗しました。編集中の内容は画面に残っていますが、ブラウザには保存できていません。JSONバックアップを作成してください。');renderDataStatus();return false}
 };
 const savedTemplate=()=>state.templates.find(t=>t.id===selectedTemplate)||null;
 const isDirty=()=>{const orig=savedTemplate();return orig?orig.title!==templateDraft.title||orig.body!==templateDraft.body:!!(templateDraft.title||templateDraft.body)};
 const canSwitch=()=>!isDirty()||confirm('共通文に未保存の変更があります。変更を破棄して切り替えますか？');
+function stageTemplate(){const chosen=state.stageTemplates?.[generationStage];return state.templates.find(t=>t.id===chosen)||(generationStage==='draft'&&!chosen?state.templates[0]:null)||null}
+function rememberStageTemplate(id){state.stageTemplates[generationStage]=id||'';persist()}
+function renderGenerationStage(){
+ for(const [id,key] of [['stageDraft','draft'],['stageFinal','final']]){const b=$(id),on=generationStage===key;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on))}
+ $('stageSavePanel').classList.toggle('hidden',generationStage!=='final');
+ $('stageHint').textContent=generationStage==='draft'?'第一段階：内容や構成を検討します。Drive保存指示は入りません。共通文の選択は第二段階と別に記憶します。':'第二段階：本文を完成させます。完成本文ができた場合だけ、Driveへの単発セーブ指示が自動で付きます。';
+ const w=world();$('saveDestinationHint').textContent=w?'保存先：Google Drive「生成物保存」以下の「'+w.name+'」フォルダを階層に関係なく探索します。':'作品・IFが未選択です。第二段階でも保存先を特定できないためDrive保存は行いません。';
+}
+function changeGenerationStage(next){if(next===generationStage)return;if(!canSwitch())return;generationStage=next;rememberMode();setTemplate(stageTemplate());renderGenerationStage();buildPreview()}
+
 function setTemplate(t){selectedTemplate=t?.id||'';templateDraft=t?copy(t):{id:newid(),title:'',body:''};renderTemplates();buildPreview()}
 function renderTemplates(){const el=$('templateSelect');el.replaceChildren(new Option('＋ 新しい共通文',''));for(const t of state.templates)el.add(new Option(t.title,t.id));el.value=selectedTemplate;$('templateName').value=templateDraft.title;$('templateBody').value=templateDraft.body;$('templateCount').textContent=state.templates.length+'件';$('duplicateTemplate').disabled=!selectedTemplate;$('deleteTemplate').disabled=!selectedTemplate;renderDirty()}
 function renderDirty(){const label=$('templateDirty');label.textContent=selectedTemplate?(isDirty()?'未保存の変更あり':'保存済み'):(isDirty()?'新規・未保存':'新規作成中');label.classList.toggle('dirty',isDirty())}
 function onTemplateEdit(){templateDraft.title=$('templateName').value;templateDraft.body=$('templateBody').value;renderDirty();buildPreview()}
-function saveTemplate(){const title=templateDraft.title.trim(),body=templateDraft.body;if(!title||!body.trim()){toast('共通文の名前と本文を入力してください');return}const entry={id:templateDraft.id,title:title.slice(0,120),body};const idx=state.templates.findIndex(t=>t.id===entry.id);if(idx<0){if(state.templates.length>=2000){toast('共通文の上限は2,000件です');return}state.templates.unshift(entry)}else state.templates[idx]=entry;persist();setTemplate(entry);toast('共通文を保存しました')}
-function deleteTemplate(){const t=savedTemplate();if(!t||!confirm('共通文「'+t.title+'」を削除しますか？'))return;state.templates=state.templates.filter(x=>x.id!==t.id);persist();setTemplate(state.templates[0]||null);toast('共通文を削除しました')}
+function saveTemplate(){const title=templateDraft.title.trim(),body=templateDraft.body;if(!title||!body.trim()){toast('共通文の名前と本文を入力してください');return}const entry={id:templateDraft.id,title:title.slice(0,120),body};const idx=state.templates.findIndex(t=>t.id===entry.id);if(idx<0){if(state.templates.length>=2000){toast('共通文の上限は2,000件です');return}state.templates.unshift(entry)}else state.templates[idx]=entry;state.stageTemplates[generationStage]=entry.id;persist();setTemplate(entry);toast('共通文を保存しました。この段階の共通文として記憶しました')}
+function deleteTemplate(){const t=savedTemplate();if(!t||!confirm('共通文「'+t.title+'」を削除しますか？'))return;state.templates=state.templates.filter(x=>x.id!==t.id);for(const key of ['draft','final'])if(state.stageTemplates[key]===t.id)state.stageTemplates[key]='';persist();setTemplate(stageTemplate());toast('共通文を削除しました')}
 function duplicateTemplate(){const t=savedTemplate();if(!t||!canSwitch())return;setTemplate(null);templateDraft.title=t.title+'（コピー）';templateDraft.body=t.body;renderTemplates();buildPreview();toast('複製しました。保存すると新規登録されます')}
 function activeMode(){return mode==='generation'?'generation':submode}
 const getPolicy=id=>state.policies.find(p=>p.id===id)||null;
@@ -492,8 +540,8 @@ function setDefaultPolicy(){if(!canSwitchPolicy())return;const p=getPolicy(polic
 function renderMode(){const gen=mode==='generation';$('tabGeneration').classList.toggle('active',gen);$('tabConversation').classList.toggle('active',!gen);$('tabGeneration').setAttribute('aria-pressed',String(gen));$('tabConversation').setAttribute('aria-pressed',String(!gen));$('conversationPane').classList.toggle('hidden',gen);$('generationTemplateSection').classList.toggle('hidden',!gen);$('generationContextSection').classList.toggle('hidden',!gen);$('resultStep').textContent=gen?'6':'2';$('composerStep').textContent=gen?'5':'2';$('resultSection').classList.toggle('hidden',!gen);$('conversationPreviewArea').classList.toggle('hidden',gen);$('composerHead').textContent=gen?'今回の本文を書く':'本文を書く';$('copyCompose').textContent=gen?'依頼文をコピー・履歴に保存':'本文＋指示をコピー・履歴に保存';for(const b of document.querySelectorAll('[data-submode]')){const active=b.dataset.submode===submode;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))}const sub=SUBMODES.find(s=>s.id===submode);$('modeDisplay').textContent=gen?'生成モード':'会話モード / '+sub.name;$('modeExplanation').textContent=gen?'場面生成など、文章を作ってもらうための依頼文を組み立てます。':sub.explain;$('modeRule').value=gen?(state.rules.generation||''):(state.conversationPrompts[submode]??DEFAULT_CONVERSATION[submode]);$('modeRuleSummary').textContent=gen?'生成モードの追加ルールを編集':'この会話モードの標準文を編集';$('modeRuleHelp').textContent=gen?'生成依頼に毎回付け足すルールを保存します。':'この会話モードを選んだときに自動挿入される文章です。自由に編集・保存できます。';$('restoreModeRule').classList.toggle('hidden',gen);renderPolicies();buildPreview()}
 
 const world=()=>state.worlds.find(w=>w.id===worldId)||null;
-function renderWorlds(preferred){const el=$('worldSelect'),chosen=preferred===undefined?worldId:preferred;el.replaceChildren(new Option('作品・IFを指定しない',''));for(const w of state.worlds)el.add(new Option(w.name,w.id));worldId=state.worlds.some(w=>w.id===chosen)?chosen:'';el.value=worldId;$('worldCount').textContent=state.worlds.length+'件';$('worldEdit').value=world()?.name||'';$('worldRename').disabled=!worldId;$('worldDelete').disabled=!worldId;renderChildren();renderUnassigned();renderMetadata();buildPreview()}
-function changeWorld(id){worldId=id;selected={viewpoint:'',scene:''};renderWorlds(id)}
+function renderWorlds(preferred){const el=$('worldSelect'),chosen=preferred===undefined?worldId:preferred;el.replaceChildren(new Option('作品・IFを指定しない',''));for(const w of state.worlds)el.add(new Option(w.name,w.id));worldId=state.worlds.some(w=>w.id===chosen)?chosen:'';el.value=worldId;$('worldCount').textContent=state.worlds.length+'件';$('worldEdit').value=world()?.name||'';$('worldRename').disabled=!worldId;$('worldDelete').disabled=!worldId;renderChildren();renderUnassigned();renderMetadata();renderGenerationStage();buildPreview()}
+function changeWorld(id){const changed=id!==worldId;worldId=id;selected={viewpoint:'',scene:''};if(changed){$('saveTitleInput').value='';drafts.generation.saveTitle='';queueDraftSave()}rememberMode();renderWorlds(id)}
 function typed(id){const value=$(id).value.trim();if(!value){toast('候補名を入力してください');return''}if(value.length>160){toast('候補名は160文字以内にしてください');return''}return value}
 function addWorld(){const value=typed('worldEdit');if(!value)return;const existing=state.worlds.find(w=>w.name===value);if(existing){changeWorld(existing.id);toast('登録済みのIFを選択しました');return}if(state.worlds.length>=300){toast('IFは300件までです');return}const w={id:newid(),name:value,viewpoint:[],scene:[]};state.worlds.push(w);persist();changeWorld(w.id);toast('IFを登録しました')}
 function renameWorld(){const w=world();if(!w){toast('変更するIFを選んでください');return}const value=typed('worldEdit');if(!value)return;if(state.worlds.some(other=>other.id!==w.id&&other.name===value)){toast('同じ名前のIFが存在します');return}w.name=value;persist();renderWorlds(w.id);toast('IFの名前を変更しました')}
@@ -518,7 +566,9 @@ async function copyText(txt){if(!txt){toast('コピーする文章がありま�
  return ok}
 function mergeImport(imported){
  const oldCount=state.templates.length;
- for(const t of imported.templates){if(state.templates.length>=2000)break;if(state.templates.some(p=>p.title===t.title&&p.body===t.body))continue;state.templates.push({...t,id:newid()})}
+ const templateMapping={};
+ for(const t of imported.templates){let dest=state.templates.find(p=>p.title===t.title&&p.body===t.body);if(!dest){if(state.templates.length>=2000)break;dest={...t,id:newid()};state.templates.push(dest)}templateMapping[t.id]=dest.id}
+ for(const key of ['draft','final'])if(!state.stageTemplates[key]&&imported.stageTemplates?.[key]&&templateMapping[imported.stageTemplates[key]])state.stageTemplates[key]=templateMapping[imported.stageTemplates[key]];
  for(const w of imported.worlds){let item=state.worlds.find(p=>p.name===w.name);if(!item){if(state.worlds.length>=300)break;item={id:newid(),name:w.name,viewpoint:[],scene:[]};state.worlds.push(item)}for(const typ of ['viewpoint','scene'])item[typ]=uniqueNames([...item[typ],...w[typ]])}
  for(const typ of ['viewpoint','scene'])state.unassigned[typ]=uniqueNames([...state.unassigned[typ],...imported.unassigned[typ]]);
  state.periodOptions=uniqueNames([...state.periodOptions,...imported.periodOptions]);state.tags=uniqueNames([...state.tags,...imported.tags]);
@@ -530,12 +580,12 @@ function mergeImport(imported){
  for(const k of ['wall','fan','memo','casual']){if(state.defaultPolicies[k]===DEFAULT_POLICIES[k]&&imported.defaultPolicies[k]!==DEFAULT_POLICIES[k]){const candidate=mapped[imported.defaultPolicies[k]];if(candidate&&getPolicy(candidate))state.defaultPolicies[k]=candidate}}
  return state.templates.length-oldCount;
 }
-function exportPayload(){captureResultDraft();return {...copy(state),version:12,app:'Prompt Shelf',format:'prompt-shelf-backup',exportedAt:new Date().toISOString(),drafts:copy(drafts),journal:copy(journalEntries),results:copy(resultEntries),resultDraft:copy(resultDraft)}}
+function exportPayload(){captureResultDraft();return {...copy(state),version:13,app:'Prompt Shelf',format:'prompt-shelf-backup',exportedAt:new Date().toISOString(),drafts:copy(drafts),journal:copy(journalEntries),results:copy(resultEntries),resultDraft:copy(resultDraft)}}
 function makeExportText(){return JSON.stringify(exportPayload(),null,2)}
 function exportData(){
  saveDraftNow();if(!journalReady){toast('履歴・整理結果のDBを読めないため、全件バックアップできません。');return}
  const blob=new Blob([makeExportText()],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
- a.href=url;a.download='prompt-shelf-v12-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+ a.href=url;a.download='prompt-shelf-v13-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
  toast('書き出しを開始しました。保存先にJSONがあるか確認してください。');
 }
 function fillBackup(){saveDraftNow();if(!journalReady){toast('履歴データを読み込めていないため、完全バックアップを表示できません');return} $('manualBackupDetails').open=true;$('manualBackupText').value=makeExportText();toast('現在の全データを表示しました') }
@@ -548,7 +598,7 @@ function parseImport(text){
    const converted=convertOld(raw,null);converted.worlds=[];return {data:converted,drafts:emptyDrafts(),journal:[],results:[],resultDraft:emptyResultDraft(),version:1,date:'不明'};
  }
  if(!raw||typeof raw!=='object'||raw.app!=='Prompt Shelf')throw Error('Prompt Shelfのバックアップではありません');
- if(!Number.isInteger(raw.version)||raw.version<1||raw.version>12)throw Error('対応していないバージョンです（v1〜v12に対応）');
+ if(!Number.isInteger(raw.version)||raw.version<1||raw.version>13)throw Error('対応していないバージョンです（v1〜v13に対応）');
  if(!Array.isArray(raw.templates)||!raw.templates.every(t=>t&&typeof t.title==='string'&&typeof t.body==='string'))throw Error('共通文の形式が不正です');
  if(raw.version>=4){
     if(!validateShape(raw))throw Error('IFや候補の形式が不正です');
@@ -597,14 +647,14 @@ async function confirmImport(){
      }
   }
  }catch(e){toast('履歴の読み込みに失敗したため中断しました：'+e.message);return}
- const ok=persist(),draftOK=saveDraftNow();saveResultDraftNow();renderResultEditor();$('batchPrompt').value=state.batchPrompt;setTemplate(state.templates[0]||null);changeWorld(state.worlds[0]?.id||'');policyChoice=state.defaultPolicies[submode]||'none';loadActiveDraft();renderMode();renderHistory();renderResults();
+ const ok=persist(),draftOK=saveDraftNow();saveResultDraftNow();renderResultEditor();$('batchPrompt').value=state.batchPrompt;setTemplate(stageTemplate());changeWorld(state.worlds[0]?.id||'');policyChoice=state.defaultPolicies[submode]||'none';loadActiveDraft();renderMode();renderHistory();renderResults();
  $('importReview').classList.add('hidden');pendingImport=null;
  toast(ok&&draftOK?(strategy==='replace'?'バックアップから復元しました':'バックアップを追加・統合しました'):'読み込みましたが一部の保存に失敗しました。JSONで退避してください');
 }
 function restoreCheckpoint(){
  if(!canSwitch())return;
  let old;try{old=localStorage.getItem(CHECKPOINT);if(!old)return;const parsed=readMain(old);if(!confirm('直前の保存状態へ戻しますか？\n現在の状態は「直前の保存状態」として入れ替わります。'))return;state=parsed}catch(e){toast('以前の保存状態を読み込めませんでした');return}
- const ok=persist();$('batchPrompt').value=state.batchPrompt;setTemplate(state.templates[0]||null);changeWorld(state.worlds[0]?.id||'');policyChoice=state.defaultPolicies[submode]||'none';renderMode();renderHistory();toast(ok?'直前の保存状態に戻しました':'読み戻しましたが保存できませんでした');
+ const ok=persist();$('batchPrompt').value=state.batchPrompt;setTemplate(stageTemplate());changeWorld(state.worlds[0]?.id||'');policyChoice=state.defaultPolicies[submode]||'none';renderMode();renderHistory();toast(ok?'直前の保存状態に戻しました':'読み戻しましたが保存できませんでした');
 }
 async function importData(file){if(!file)return;if(file.size>24*1024*1024){toast('24MB以下のJSONを選んでください');return}try{reviewImport(await file.text(),file.name)}catch(e){toast('ファイルを読み込めませんでした')}}
 $('tabGeneration').addEventListener('click',()=>{if(mode==='conversation'&&!canSwitchPolicy())return;captureDraft();saveDraftNow();mode='generation';rememberMode();loadActiveDraft();renderMode()});
@@ -616,10 +666,10 @@ $('policyBody').addEventListener('input',e=>{policyDraft.body=e.target.value;$('
 $('policyNew').addEventListener('click',()=>{if(!canSwitchPolicy())return;setPolicyEditor('');$('policyName').focus()});
 $('policySave').addEventListener('click',savePolicy);$('policyDelete').addEventListener('click',deletePolicy);$('policySetDefault').addEventListener('click',setDefaultPolicy);
 $('saveModeRule').addEventListener('click',()=>{if(mode==='generation')state.rules.generation=$('modeRule').value;else state.conversationPrompts[submode]=$('modeRule').value;persist();buildPreview();toast('このモードの文を保存しました')});$('clearModeRule').addEventListener('click',()=>{if(mode==='generation')state.rules.generation='';else state.conversationPrompts[submode]='';$('modeRule').value='';persist();buildPreview();toast('このモードの文を空欄にしました')});$('restoreModeRule').addEventListener('click',()=>{if(mode==='generation')return;state.conversationPrompts[submode]=DEFAULT_CONVERSATION[submode];$('modeRule').value=DEFAULT_CONVERSATION[submode];persist();buildPreview();toast('標準文に戻しました')});
-$('templateSelect').addEventListener('change',e=>{const next=e.target.value;if(next===selectedTemplate)return;if(!canSwitch()){renderTemplates();return}setTemplate(state.templates.find(t=>t.id===next)||null)});$('newTemplate').addEventListener('click',()=>{if(!canSwitch())return;setTemplate(null);$('templateName').focus()});$('templateName').addEventListener('input',onTemplateEdit);$('templateBody').addEventListener('input',onTemplateEdit);$('saveTemplate').addEventListener('click',saveTemplate);$('duplicateTemplate').addEventListener('click',duplicateTemplate);$('deleteTemplate').addEventListener('click',deleteTemplate);
+$('templateSelect').addEventListener('change',e=>{const next=e.target.value;if(next===selectedTemplate)return;if(!canSwitch()){renderTemplates();return}setTemplate(state.templates.find(t=>t.id===next)||null);rememberStageTemplate(next)});$('stageDraft').addEventListener('click',()=>changeGenerationStage('draft'));$('stageFinal').addEventListener('click',()=>changeGenerationStage('final'));$('saveTitleInput').addEventListener('input',()=>{captureDraft();buildPreview()});$('newTemplate').addEventListener('click',()=>{if(!canSwitch())return;setTemplate(null);$('templateName').focus()});$('templateName').addEventListener('input',onTemplateEdit);$('templateBody').addEventListener('input',onTemplateEdit);$('saveTemplate').addEventListener('click',saveTemplate);$('duplicateTemplate').addEventListener('click',duplicateTemplate);$('deleteTemplate').addEventListener('click',deleteTemplate);
 $('worldSelect').addEventListener('change',e=>changeWorld(e.target.value));$('worldAdd').addEventListener('click',addWorld);$('worldRename').addEventListener('click',renameWorld);$('worldDelete').addEventListener('click',deleteWorld);
 for(const t of ['viewpoint','scene']){$(t+'Select').addEventListener('change',e=>setChild(t,e.target.value));$(t+'Add').addEventListener('click',()=>addChild(t));$(t+'Rename').addEventListener('click',()=>renameChild(t));$(t+'Delete').addEventListener('click',()=>deleteChild(t))}
-$('legacyType').addEventListener('change',renderUnassigned);$('legacyAssign').addEventListener('click',()=>handleLegacy(false));$('legacyDiscard').addEventListener('click',()=>handleLegacy(true));$('extraInput').addEventListener('input',()=>{captureDraft();buildPreview()});$('messageBody').addEventListener('input',()=>{captureDraft();buildPreview()});$('outputText').addEventListener('input',captureDraft);$('copyPreview').addEventListener('click',()=>copyWithHistory(buildText()));$('applyOutput').addEventListener('click',()=>{applyOutput();captureDraft()});$('copyOutput').addEventListener('click',()=>copyWithHistory($('outputText').value,$('outputText').value));$('copyCompose').addEventListener('click',()=>{if(!$('messageBody').value.trim()&&mode==='conversation'){toast('まず【本文】を入力してください。指示だけなら隣のボタンでコピーできます');return}copyWithHistory(buildText())});$('copyInstructions').addEventListener('click',()=>copyText(instructionsOnly()));$('clearComposer').addEventListener('click',()=>{if(!$('messageBody').value||confirm('入力中の本文を空欄にしますか？\nコピー済みの履歴は消えません。')){$('messageBody').value='';captureDraft();saveDraftNow();buildPreview();$('messageBody').focus()}});$('metaWorldSelect').addEventListener('change',e=>{activeDraft().worldId=e.target.value;queueDraftSave();renderMetadata()});$('metaWorldAdd').addEventListener('click',addMetaWorld);$('metaWorldName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addMetaWorld()}});
+$('legacyType').addEventListener('change',renderUnassigned);$('legacyAssign').addEventListener('click',()=>handleLegacy(false));$('legacyDiscard').addEventListener('click',()=>handleLegacy(true));$('extraInput').addEventListener('input',()=>{captureDraft();buildPreview()});$('messageBody').addEventListener('input',()=>{captureDraft();buildPreview()});$('outputText').addEventListener('input',captureDraft);$('copyPreview').addEventListener('click',()=>copyWithHistory(buildText()));$('applyOutput').addEventListener('click',()=>{applyOutput();captureDraft()});$('copyOutput').addEventListener('click',()=>copyWithHistory($('outputText').value,$('outputText').value));$('copyCompose').addEventListener('click',()=>{if(!$('messageBody').value.trim()&&mode==='conversation'){toast('まず【本文】を入力してください。指示だけなら隣のボタンでコピーできます');return}copyWithHistory(buildText())});$('copyInstructions').addEventListener('click',()=>copyText(instructionsOnly()));$('clearComposer').addEventListener('click',()=>{if(!$('messageBody').value||confirm('入力中の本文を空欄にしますか？\nコピー済みの履歴は消えません。')){$('messageBody').value='';if(mode==='generation'){$('saveTitleInput').value='';drafts.generation.saveTitle=''}captureDraft();saveDraftNow();buildPreview();$('messageBody').focus()}});$('metaWorldSelect').addEventListener('change',e=>{activeDraft().worldId=e.target.value;queueDraftSave();renderMetadata()});$('metaWorldAdd').addEventListener('click',addMetaWorld);$('metaWorldName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addMetaWorld()}});
  $('metaPeriodSelect').addEventListener('change',e=>{activeDraft().period=e.target.value;queueDraftSave();renderMetadata()});$('metaPeriodAdd').addEventListener('click',addPeriod);$('metaPeriodRename').addEventListener('click',renamePeriod);$('metaPeriodDelete').addEventListener('click',deletePeriod);$('metaPeriodEdit').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addPeriod()}});
  $('metaTagAdd').addEventListener('click',addTag);$('metaTagName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addTag()}});$('copyTemplateBody').addEventListener('click',()=>copyText(templateDraft.body));$('exportData').addEventListener('click',exportData);$('importData').addEventListener('click',()=>$('importFile').click());$('importFile').addEventListener('change',async e=>{await importData(e.target.files?.[0]);e.target.value='' });$('undoSave').addEventListener('click',restoreCheckpoint);$('fillBackupText').addEventListener('click',fillBackup);$('copyBackupText').addEventListener('click',copyManualBackup);$('importPaste').addEventListener('click',()=>reviewImport($('manualBackupText').value,'貼り付けた文字列'));$('importStrategy').addEventListener('change',updateImportWarning);$('confirmImport').addEventListener('click',confirmImport);$('cancelImport').addEventListener('click',()=>{$('importReview').classList.add('hidden');pendingImport=null;toast('読み込みをキャンセルしました')});$('batchPrompt').value=state.batchPrompt;
  $('batchPrompt').addEventListener('change',()=>{state.batchPrompt=$('batchPrompt').value.slice(0,20000);persist()});
@@ -628,7 +678,7 @@ $('resultSave').addEventListener('click',saveResult);$('resultNew').addEventList
 $('batchSelectFiltered').addEventListener('click',selectFilteredHistory);$('batchClearSelection').addEventListener('click',clearSelectedHistory);$('batchCopy').addEventListener('click',copySelectedHistory);$('batchMarkDone').addEventListener('click',()=>markHistorySelection(selectedHistoryIds,true));$('batchMarkPending').addEventListener('click',()=>markHistorySelection(selectedHistoryIds,false));$('historyOrganizedFilter').addEventListener('change',()=>{journalPageSize=50;renderHistory()});
  $('historySearch').addEventListener('input',()=>{journalPageSize=50;renderHistory()});$('historyFilter').addEventListener('change',()=>{journalPageSize=50;renderHistory()});for(const id of ['historyWorldFilter','historyPeriodFilter','historyTagFilter'])$(id).addEventListener('change',()=>{journalPageSize=50;renderHistory()});$('showMoreHistory').addEventListener('click',()=>{journalPageSize+=50;renderHistory()});
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveTemplate()}});window.addEventListener('pagehide',()=>{saveDraftNow();saveResultDraftNow()});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){saveDraftNow();saveResultDraftNow()}});window.addEventListener('beforeunload',e=>{saveDraftNow();saveResultDraftNow();if(isDirty()){e.preventDefault();e.returnValue=''}});
-loadResultDraft();renderResultEditor();setTemplate(state.templates[0]||null);renderWorlds(state.worlds[0]?.id||'');restoreMode();policyChoice=state.defaultPolicies[submode]||'none';loadActiveDraft();renderMode();renderDataStatus();prepareJournal();
+loadResultDraft();renderResultEditor();restoreMode();setTemplate(stageTemplate());renderWorlds(worldId||state.worlds[0]?.id||'');policyChoice=state.defaultPolicies[submode]||'none';loadActiveDraft();renderMode();renderDataStatus();prepareJournal();
 })();
 </script>
 </body>
