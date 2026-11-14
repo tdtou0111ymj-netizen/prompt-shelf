@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<title>Prompt Shelf v10 | 書き込みに作品・時点・タグを付けて保存</title>
+<title>Prompt Shelf v11 | 履歴をまとめて整理へ渡す</title>
 <style>
 :root{--ink:#213449;--muted:#65778a;--line:#dce5ef;--blue:#2a648e;--blue-2:#e9f2f9;--bg:#f4f7f9;--card:#fff;--danger:#a74648;--ok:#347664;--shadow:0 10px 25px rgba(29,60,82,.045)}
 *{box-sizing:border-box}html,body{min-height:100%;margin:0}body{background:linear-gradient(135deg,#edf4f8 0,#f9fafb 49%,#eef5f5 100%);color:var(--ink);font:14px/1.65 -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.38}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid #9bc8e2;outline-offset:2px}
@@ -50,11 +50,23 @@
 .history-edit{margin-top:10px;border-top:1px dashed #d7e3ee;padding-top:9px}.history-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.history-edit .label{margin:5px 0 4px}.history-edit .tag-choices{margin:7px 0}
 .history-toolbar.history-meta-filters{margin-top:8px}.history-toolbar.history-meta-filters .field{max-width:none;min-width:135px;flex:1}
 @media(max-width:650px){.meta-grid,.history-edit-grid{grid-template-columns:1fr}.save-metadata{padding:11px}.history-toolbar.history-meta-filters .field{flex:1 1 100%}.meta-register .btn{flex:0 0 auto}}
+/* v11: optional batch organization, reversible selection & status */
+.history-batch{border:1px solid #d6e6ee;border-radius:13px;background:#f7fbfd;padding:14px;margin:12px 0}
+.batch-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.batch-head strong{font-size:14px}.batch-actions{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}
+.batch-actions .btn{white-space:normal}
+.history-item.is-picked{border-color:#87b8d6;background:#f5fbff}
+.history-select{display:flex;gap:8px;align-items:center;font-weight:730;font-size:12px}
+.history-select input{width:17px;height:17px;accent-color:var(--blue)}
+.history-mark{font-size:11px;color:var(--muted)}
+.batch-text{min-height:85px;resize:vertical;line-height:1.7}
+.batch-status{font-size:11px;color:var(--muted);margin-top:7px}
+@media(max-width:520px){.history-batch{padding:11px}.batch-actions .btn{flex:1 1 46%}.batch-head{align-items:start}.history-meta{flex-wrap:wrap}}
 </style>
 </head>
 <body>
 <div class="shell">
-<header class="top"><div><div class="eyebrow">PROMPT SHELF / V10</div><h1>定型文とモード</h1><p class="intro">生成は定型文とIF指定、会話は本文と返答スタイル。書き込みを自動保存し、作品・時点・タグで探せます。</p></div><span class="status" id="status">保存状況を確認中</span></header>
+<header class="top"><div><div class="eyebrow">PROMPT SHELF / V11</div><h1>定型文とモード</h1><p class="intro">生成は定型文とIF指定、会話は本文と返答スタイル。書き込みを自動保存し、作品・時点・タグで探せます。</p></div><span class="status" id="status">保存状況を確認中</span></header>
 <div id="warning" class="alert hidden" role="alert">この開き方ではブラウザへの保存を確認できません。作業が終わる前に必ずバックアップを書き出すか、文字列をコピーしてください。</div>
 <main class="layout">
 <section class="card full" aria-labelledby="modeHead"><div class="head"><div class="headmain"><span class="step">1</span><h2 id="modeHead">モードを選ぶ</h2></div><span class="pill">2つの大分類</span></div>
@@ -134,15 +146,29 @@
   <p class="history-explain">本文と分類は入力中に下書き保存。コピーが成功すると、送る文章・本文・分類を日時付きで1件記録します。「コピーした」記録であり、ChatGPTへの送信完了を保証するものではありません。ChatGPTの返答は自動収集しません。</p>
   <div class="history-toolbar"><input type="search" id="historySearch" class="field" placeholder="本文・作品・時点・タグで検索" aria-label="書き込み履歴を検索"><select id="historyFilter" class="field" aria-label="履歴のモードで絞り込む"><option value="all">すべてのモード</option><option value="generation">生成</option><option value="wall">壁打ち</option><option value="fan">オタトーク</option><option value="memo">メモ</option><option value="casual">雑談</option></select></div>
   <div class="history-toolbar history-meta-filters"><select id="historyWorldFilter" class="field" aria-label="作品・IFで絞り込む"><option value="all">すべての作品・IF</option></select><select id="historyPeriodFilter" class="field" aria-label="作中時点で絞り込む"><option value="all">すべての作中時点</option></select><select id="historyTagFilter" class="field" aria-label="タグで絞り込む"><option value="all">すべてのタグ</option></select></div>
-  <p class="info">古いv9の履歴も残ります。分類を付けていない履歴は「未分類」として絞り込めます。</p>
+  <div class="history-toolbar history-meta-filters" style="margin-top:8px"><select id="historyOrganizedFilter" class="field" aria-label="整理状態で絞り込む"><option value="all">整理状態：すべて</option><option value="pending">未整理だけ</option><option value="done">整理済みだけ</option></select></div>
+  <p class="info">古いv9・v10の履歴も残ります。分類を付けていない履歴は「未分類」、整理状態は「未整理」として扱います。</p>
+  <div class="history-batch" id="historyBatchSection">
+    <div class="batch-head"><strong>履歴をまとめてChatGPTへ渡す</strong><span id="batchSelectedCount" class="pill" aria-live="polite">0件選択</span></div>
+    <p class="history-explain">選択するのは整理のためだけ。原文は消さず、「整理済み」は後から取り消せます。選ぶのが面倒なら、検索結果をまとめて全選択することもできます。</p>
+    <div class="batch-actions"><button type="button" class="btn light" id="batchSelectFiltered">絞り込み結果を全選択</button><button type="button" class="btn" id="batchClearSelection">選択解除</button></div>
+    <label class="label" for="batchPrompt">ChatGPTへの整理依頼（編集・保存可能）</label>
+    <textarea id="batchPrompt" class="field batch-text" rows="3" aria-label="履歴整理の依頼文"></textarea>
+    <label class="label" for="batchTextKind">まとめる文章</label>
+    <select id="batchTextKind" class="field"><option value="body">自分の書き込み本文（推奨）</option><option value="fullText">当時コピーした依頼文全文</option></select>
+    <p class="history-explain">日時・モード・作品・時点・タグを付け、古い順に連結。ChatGPTの返答は履歴に含まれません。</p>
+    <div class="batch-actions"><button type="button" class="btn main" id="batchCopy">選んだ履歴をまとめてコピー</button><button type="button" class="btn light" id="batchMarkDone">選択分を整理済みにする</button><button type="button" class="btn" id="batchMarkPending">選択分を未整理に戻す</button></div>
+    <p class="batch-status" id="batchStatus" role="status" aria-live="polite">履歴を読み込んでいます。</p>
+    <div id="batchManualArea" class="hidden" style="margin-top:10px"><label class="label" for="batchManualText">自動コピーできない場合：ここを選択してコピー</label><textarea id="batchManualText" class="field medium" readonly></textarea></div>
+  </div>
   <p class="info" id="historyStatus" role="status" aria-live="polite">保存場所を準備しています。</p>
   <div id="historyList" class="history-list"></div>
   <button id="showMoreHistory" class="btn light hidden" type="button" style="margin-top:12px">さらに50件表示</button>
 </section>
 
 <section class="card full storage-card" aria-labelledby="storageHead">
-  <div class="head"><div class="headmain"><span class="step">保存</span><h2 id="storageHead">データの保存・引き継ぎ</h2></div><span class="pill">v10</span></div>
-  <p class="small">共通文・IF・時点・タグ候補・各モード設定に加え、入力中の下書きと分類付き書き込み履歴もまとめて保管します。<strong>HTML本体と登録データは別物</strong>です。</p>
+  <div class="head"><div class="headmain"><span class="step">保存</span><h2 id="storageHead">データの保存・引き継ぎ</h2></div><span class="pill">v11</span></div>
+  <p class="small">共通文・IF・時点・タグ候補・各モード設定に加え、下書きと整理状態を含む書き込み履歴もまとめて保管します。<strong>HTML本体と登録データは別物</strong>です。</p>
   <p class="storage-meta storage-stat" id="dataStatus" aria-live="polite">保存状況を確認しています。</p>
   <div class="storage-actions">
     <button id="exportData" class="btn main" type="button">① JSONバックアップを書き出し</button>
@@ -165,9 +191,9 @@
     <div class="storage-actions"><button id="confirmImport" class="btn main" type="button">この内容を読み込む</button><button id="cancelImport" class="btn" type="button">キャンセル</button></div>
   </div>
   <details class="storage-panel">
-    <summary>古い版からv10へ移る手順（iPad・iPhoneも同じ）</summary>
-    <ol class="storage-guide"><li><strong>以前の版</strong>を開き、「バックアップを書き出し」でJSONを保存する。</li><li><strong>新しいv10</strong>をSafariで開いて「JSONから読み込む」でそのファイルを選ぶ。</li><li>内容・件数を確認し、必要に応じて「丸ごと置き換え」を選んで実行する。</li><li>定型文とIF別候補を確認してから、新しいバックアップも保存する。</li></ol>
-    <p>ブラウザによっては以前の版とv10が同じ保存領域を使い、自動で引き継がれます。ただしHTMLファイルの開き方やURLが違うと自動移行できない場合があるため、<strong>JSONでの引き継ぎを基本</strong>にしてください。旧ファイルも、移行確認が済むまでは消さないでください。</p>
+    <summary>古い版からv11へ移る手順（iPad・iPhoneも同じ）</summary>
+    <ol class="storage-guide"><li><strong>以前の版</strong>を開き、「バックアップを書き出し」でJSONを保存する。</li><li><strong>新しいv11</strong>をSafariで開いて「JSONから読み込む」でそのファイルを選ぶ。</li><li>内容・件数を確認し、必要に応じて「丸ごと置き換え」を選んで実行する。</li><li>定型文とIF別候補を確認してから、新しいバックアップも保存する。</li></ol>
+    <p>ブラウザによっては以前の版とv11が同じ保存領域を使い、自動で引き継がれます。ただしHTMLファイルの開き方やURLが違うと自動移行できない場合があるため、<strong>JSONでの引き継ぎを基本</strong>にしてください。旧ファイルも、移行確認が済むまでは消さないでください。</p>
   </details>
   <p class="small" style="margin-top:12px">HTMLのファイルプレビューではボタンが動かない場合があります。SafariなどでWebサイトとして開いてください。この端末のブラウザ内保存（設定・下書きはlocalStorage、履歴はIndexedDB）には同期・永続性の保証がありません。バックアップのダウンロード開始と、実際に「ファイル」等に保存できたことは別なので、保存先を確認してください。</p>
 </section>
@@ -192,19 +218,20 @@ const POLICY_TEXT={
  expand:'今回は発想を転がすことを優先し、面白い点を拾って、反応やアイデアを積極的に返してください。新しい設定や展開は可能性として提示し、確定事項と混同しないでください。',
  none:''
 };
+const DEFAULT_BATCH_PROMPT='以下は私がChatGPTへ送るために書いた文章の記録です。原文の趣旨を保って整理し、確定した事項・仮説・未決定事項・矛盾候補を分けてください。私が明示していないことは確定事項にせず、ChatGPT側の過去の返答が含まれていない点に注意してください。';
 const DEFAULT_POLICY_NAMES={source:'資料を確認して正確に返答',noAssume:'資料確認なし・勝手に補完しない',expand:'ネタを拾って広げる',none:'追加指定なし'};
 const BUILTIN_POLICIES=()=>Object.keys(DEFAULT_POLICY_NAMES).map(id=>({id,name:DEFAULT_POLICY_NAMES[id],body:POLICY_TEXT[id]}));
 const newid=()=>{try{return crypto.randomUUID()}catch(e){return 'id-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2)}};
 const copy=x=>JSON.parse(JSON.stringify(x));
 const uniqueNames=(a,max=500)=>{const out=[];for(const x of Array.isArray(a)?a:[]){if(typeof x!=='string')continue;const s=x.trim().slice(0,160);if(s&&!out.includes(s))out.push(s);if(out.length>=max)break}return out};
-const defaultState=()=>({version:10,templates:[],worlds:[],periodOptions:[],tags:[],unassigned:{viewpoint:[],scene:[]},rules:{generation:'',wall:'',fan:'',memo:'',casual:''},conversationPrompts:{...DEFAULT_CONVERSATION},policies:BUILTIN_POLICIES(),defaultPolicies:{...DEFAULT_POLICIES},savedAt:null});
+const defaultState=()=>({version:11,batchPrompt:DEFAULT_BATCH_PROMPT,templates:[],worlds:[],periodOptions:[],tags:[],unassigned:{viewpoint:[],scene:[]},rules:{generation:'',wall:'',fan:'',memo:'',casual:''},conversationPrompts:{...DEFAULT_CONVERSATION},policies:BUILTIN_POLICIES(),defaultPolicies:{...DEFAULT_POLICIES},savedAt:null});
 function normalize(src){const base=defaultState();if(!src||typeof src!=='object')return base;const templates=Array.isArray(src.templates)?src.templates.filter(t=>t&&typeof t.title==='string'&&t.title.trim()&&typeof t.body==='string').slice(0,2000).map(t=>({id:typeof t.id==='string'&&t.id?t.id:newid(),title:t.title.trim().slice(0,120),body:t.body.slice(0,200000)})):[];const used=new Set();const worlds=[];for(const w of Array.isArray(src.worlds)?src.worlds:[]){if(!w||typeof w.name!=='string')continue;const name=w.name.trim().slice(0,160);if(!name||used.has(name))continue;used.add(name);worlds.push({id:typeof w.id==='string'&&w.id?w.id:newid(),name,viewpoint:uniqueNames(w.viewpoint),scene:uniqueNames(w.scene)});if(worlds.length>=300)break}const unassigned={viewpoint:uniqueNames(src.unassigned?.viewpoint),scene:uniqueNames(src.unassigned?.scene)};const rules={};for(const k of MODES)rules[k]=typeof src.rules?.[k]==='string'?src.rules[k].slice(0,200000):'';const conversationPrompts={};for(const k of ['wall','fan','memo','casual']){const saved=src.conversationPrompts?.[k];conversationPrompts[k]=typeof saved==='string'?saved.slice(0,200000):(rules[k]||DEFAULT_CONVERSATION[k]);}const policies=[];const usedPolicyIds=new Set();
 const policySource=Array.isArray(src.policies)?src.policies:BUILTIN_POLICIES();
 for(const p of policySource){if(!p||typeof p.id!=='string'||typeof p.name!=='string'||typeof p.body!=='string')continue;const id=p.id.slice(0,120),name=p.name.trim().slice(0,120);if(!id||!name||id==='none'||usedPolicyIds.has(id))continue;policies.push({id,name,body:p.body.slice(0,200000)});usedPolicyIds.add(id);if(policies.length>=300)break}
 policies.push({id:'none',name:DEFAULT_POLICY_NAMES.none,body:''});
 const validPolicy=id=>policies.some(p=>p.id===id);
 const defaultPolicies={};for(const k of ['wall','fan','memo','casual']){const chosen=src.defaultPolicies?.[k];const fallback=DEFAULT_POLICIES[k];defaultPolicies[k]=typeof chosen==='string'&&validPolicy(chosen)?chosen:(validPolicy(fallback)?fallback:'none')}
-return {version:10,templates,worlds:src.worlds?worlds:base.worlds,periodOptions:uniqueNames(src.periodOptions),tags:uniqueNames(src.tags),unassigned,rules,conversationPrompts,policies,defaultPolicies,savedAt:typeof src.savedAt==='string'?src.savedAt:null}}
+return {version:11,batchPrompt:typeof src.batchPrompt==='string'?src.batchPrompt.slice(0,20000):DEFAULT_BATCH_PROMPT,templates,worlds:src.worlds?worlds:base.worlds,periodOptions:uniqueNames(src.periodOptions),tags:uniqueNames(src.tags),unassigned,rules,conversationPrompts,policies,defaultPolicies,savedAt:typeof src.savedAt==='string'?src.savedAt:null}}
 function convertOld(oldTemplates,oldOptions){const base=defaultState();const old=Array.isArray(oldTemplates)?oldTemplates:[];base.templates=old.filter(t=>t&&typeof t.title==='string'&&t.title.trim()&&typeof t.body==='string').slice(0,2000).map(t=>({id:typeof t.id==='string'?t.id:newid(),title:t.title.trim().slice(0,120),body:t.body.slice(0,200000)}));if(oldOptions&&typeof oldOptions==='object'){
 const names=uniqueNames(oldOptions.world,300);if(names.length)base.worlds=names.map(name=>({id:newid(),name,viewpoint:[],scene:[]}));base.unassigned.viewpoint=uniqueNames(oldOptions.viewpoint);base.unassigned.scene=uniqueNames(oldOptions.scene)}return base}
 let state=defaultState(),storageOK=true,selectedTemplate='',templateDraft={id:newid(),title:'',body:''},mode='generation',submode='wall',policyChoice='source',policyEditId='',policyDraft={id:'',name:'',body:''},worldId='',selected={viewpoint:'',scene:''},toastTimer,pendingImport=null,loadSource='新規データ';
@@ -219,6 +246,7 @@ const emptyDrafts=()=>Object.fromEntries(MODES.map(k=>[k,emptyDraft()]));
 const normalizeDrafts=src=>{const all=emptyDrafts();if(src&&typeof src==='object')for(const k of MODES){const entry=src[k];if(entry&&typeof entry==='object'){for(const f of ['body','extra','output'])if(typeof entry[f]==='string')all[k][f]=entry[f].slice(0,300000);if(typeof entry.worldId==='string')all[k].worldId=entry.worldId.slice(0,150);if(typeof entry.period==='string')all[k].period=entry.period.slice(0,160);all[k].tags=uniqueNames(entry.tags)}}return all};
 let drafts=emptyDrafts(),draftStorageOK=true,draftSaveTimer=null,bodySwitching=false;
 let journalDb=null,journalReady=false,journalEntries=[],journalPageSize=50,journalError='';
+let selectedHistoryIds=new Set();
 function rememberMode(){try{localStorage.setItem(UI_STORE,JSON.stringify({mode,submode}))}catch(e){}}
 function restoreMode(){try{const pref=JSON.parse(localStorage.getItem(UI_STORE)||'null');if(pref?.mode==='conversation')mode='conversation';if(MODES.includes(pref?.submode)&&pref.submode!=='generation')submode=pref.submode}catch(e){}}
 function setDraftState(text,error=false){const el=$('draftStatus');el.textContent=text;el.classList.toggle('error',error)}
@@ -258,23 +286,51 @@ function initJournal(){return new Promise((resolve,reject)=>{if(!('indexedDB' in
 function journalTransaction(kind,items=[]){return new Promise((resolve,reject)=>{if(!journalDb)return reject(Error('履歴DBが利用できません'));let tx;try{tx=journalDb.transaction(JOURNAL_STORE,'readwrite');const store=tx.objectStore(JOURNAL_STORE);if(kind==='add')store.put(items[0]);if(kind==='delete')store.delete(items[0]);if(kind==='replace'){store.clear();for(const item of items)store.put(item)}if(kind==='merge')for(const item of items)store.put(item);tx.oncomplete=()=>resolve(true);tx.onerror=()=>reject(tx.error||Error('履歴保存失敗'));tx.onabort=()=>reject(tx.error||Error('履歴保存中断'))}catch(e){reject(e)}})}
 function getJournalAll(){return new Promise((resolve,reject)=>{if(!journalDb)return reject(Error('履歴DBが利用できません'));try{const tx=journalDb.transaction(JOURNAL_STORE,'readonly');const r=tx.objectStore(JOURNAL_STORE).getAll();r.onsuccess=()=>resolve(r.result||[]);r.onerror=()=>reject(r.error||Error('履歴読込失敗'))}catch(e){reject(e)}})}
 function safeJournalEntry(x){if(!x||typeof x!=='object'||typeof x.id!=='string'||typeof x.createdAt!=='string'||typeof x.fullText!=='string'||typeof x.body!=='string')return null;
- return {id:x.id.slice(0,150),createdAt:x.createdAt.slice(0,40),mode:MODES.includes(x.mode)?x.mode:'casual',world:typeof x.world==='string'?x.world.slice(0,160):'',period:typeof x.period==='string'?x.period.slice(0,160):'',tags:uniqueNames(x.tags),body:x.body.slice(0,300000),fullText:x.fullText.slice(0,500000)};}
+ return {id:x.id.slice(0,150),createdAt:x.createdAt.slice(0,40),mode:MODES.includes(x.mode)?x.mode:'casual',world:typeof x.world==='string'?x.world.slice(0,160):'',period:typeof x.period==='string'?x.period.slice(0,160):'',tags:uniqueNames(x.tags),body:x.body.slice(0,300000),fullText:x.fullText.slice(0,500000),organized:x.organized===true,organizedAt:typeof x.organizedAt==='string'?x.organizedAt.slice(0,40):''};}
 async function prepareJournal(){try{journalDb=await initJournal();journalDb.onversionchange=()=>{journalDb.close();journalReady=false;setJournalStatus('別の画面で履歴データベースが更新されました。ページを再読み込みしてください。',true)};
  journalEntries=(await getJournalAll()).map(safeJournalEntry).filter(Boolean).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));journalReady=true;setJournalStatus('履歴はこのブラウザのIndexedDBに保存されます。');}
  catch(e){journalError=String(e?.message||e);journalReady=false;setJournalStatus('履歴の保存は使えません。コピー自体は可能です。'+journalError,true)}renderHistory();renderDataStatus()}
 function setJournalStatus(message,error=false){$('historyStatus').textContent=message;$('historyStatus').style.color=error?'var(--danger)':''}
 function refreshHistoryFilters(){const defs=[['historyWorldFilter','すべての作品・IF',uniqueNames([...state.worlds.map(x=>x.name),...journalEntries.map(x=>x.world)])],['historyPeriodFilter','すべての作中時点',uniqueNames([...state.periodOptions,...journalEntries.map(x=>x.period)])],['historyTagFilter','すべてのタグ',uniqueNames([...state.tags,...journalEntries.flatMap(x=>x.tags)])]];
  for(const [id,caption,names] of defs){const el=$(id),old=el.value;el.replaceChildren(new Option(caption,'all'),new Option('未分類・指定なし','_none_'));for(const name of names)el.add(new Option(name,name));el.value=[...el.options].some(x=>x.value===old)?old:'all'}}
-function renderHistory(){refreshHistoryFilters();const list=$('historyList');list.replaceChildren();const query=$('historySearch').value.trim().toLowerCase(),filter=$('historyFilter').value,worldFilter=$('historyWorldFilter').value,periodFilter=$('historyPeriodFilter').value,tagFilter=$('historyTagFilter').value;
+function filteredHistory(){const query=$('historySearch').value.trim().toLowerCase(),filter=$('historyFilter').value,worldFilter=$('historyWorldFilter').value,periodFilter=$('historyPeriodFilter').value,tagFilter=$('historyTagFilter').value,orgFilter=$('historyOrganizedFilter').value;
  const match=(value,wanted)=>wanted==='all'||(wanted==='_none_'?!value:value===wanted);
- const filtered=journalEntries.filter(x=>(filter==='all'||x.mode===filter)&&match(x.world,worldFilter)&&match(x.period,periodFilter)&&(tagFilter==='all'||(tagFilter==='_none_'?!x.tags.length:x.tags.includes(tagFilter)))&&(!query||(x.body+' '+x.world+' '+x.period+' '+x.tags.join(' ')+' '+x.fullText).toLowerCase().includes(query)));
+ return journalEntries.filter(x=>(filter==='all'||x.mode===filter)&&match(x.world,worldFilter)&&match(x.period,periodFilter)&&(tagFilter==='all'||(tagFilter==='_none_'?!x.tags.length:x.tags.includes(tagFilter)))&&(orgFilter==='all'||(orgFilter==='done'?x.organized:!x.organized))&&(!query||(x.body+' '+x.world+' '+x.period+' '+x.tags.join(' ')+' '+x.fullText).toLowerCase().includes(query)));
+}
+function renderBatchControls(filtered){const visible=filtered||filteredHistory();const size=selectedHistoryIds.size;
+ $('batchSelectedCount').textContent=size+'件選択';$('batchStatus').textContent='検索結果 '+visible.length+'件 ／ 選択中 '+size+'件（絞り込み外の選択も含む）';
+ $('batchCopy').disabled=!size||!journalReady;$('batchMarkDone').disabled=!size||!journalReady;$('batchMarkPending').disabled=!size||!journalReady;$('batchClearSelection').disabled=!size;$('batchSelectFiltered').disabled=!visible.length||!journalReady;
+ $('batchSelectFiltered').textContent='絞り込み結果を全選択（'+visible.length+'件）';
+}
+function renderHistory(){refreshHistoryFilters();const list=$('historyList');list.replaceChildren();const filtered=filteredHistory();
  $('historyCount').textContent=journalEntries.length+'件（表示 '+filtered.length+'件）';for(const item of filtered.slice(0,journalPageSize)){
-  const card=document.createElement('article');card.className='history-item';const top=document.createElement('div');top.className='history-meta';const label=document.createElement('strong');const modeName=item.mode==='generation'?'生成':(SUBMODES.find(x=>x.id===item.mode)?.name||item.mode);label.textContent=modeName+' · '+(item.world||'未分類')+(item.period?' · '+item.period:'');const time=document.createElement('span');const date=new Date(item.createdAt);time.textContent=isNaN(date.getTime())?item.createdAt:date.toLocaleString('ja-JP');top.append(label,time);
+  const card=document.createElement('article');card.className='history-item'+(selectedHistoryIds.has(item.id)?' is-picked':'');const top=document.createElement('div');top.className='history-meta';
+  const selector=document.createElement('label');selector.className='history-select';const cb=document.createElement('input');cb.type='checkbox';cb.checked=selectedHistoryIds.has(item.id);cb.setAttribute('aria-label','履歴を選択');cb.addEventListener('change',()=>{if(cb.checked)selectedHistoryIds.add(item.id);else selectedHistoryIds.delete(item.id);card.classList.toggle('is-picked',cb.checked);renderBatchControls(filtered)});selector.append(cb,document.createTextNode('まとめる'));
+  const label=document.createElement('strong');const modeName=item.mode==='generation'?'生成':(SUBMODES.find(x=>x.id===item.mode)?.name||item.mode);label.textContent=modeName+' · '+(item.world||'未分類')+(item.period?' · '+item.period:'');const time=document.createElement('span');const date=new Date(item.createdAt);time.textContent=isNaN(date.getTime())?item.createdAt:date.toLocaleString('ja-JP');top.append(selector,label,time);
   const body=document.createElement('p');body.className='history-body';body.textContent=item.body||'(本文なし／編集欄の文章)';card.append(top,body);
   if(item.tags.length){const chips=document.createElement('div');chips.className='history-tags';for(const x of item.tags){const chip=document.createElement('span');chip.className='history-chip';chip.textContent='#'+x;chips.append(chip)}card.append(chips)}
-  const acts=document.createElement('div');acts.className='history-controls';for(const [name,kind] of [['全文コピー','copy'],['本文を戻す','restore'],['分類を編集','edit'],['削除','delete']]){const b=document.createElement('button');b.className='btn '+(kind==='delete'?'danger':'');b.type='button';b.textContent=name;b.addEventListener('click',()=>kind==='edit'?openHistoryMetadata(card,item):historyAction(kind,item.id));acts.append(b)}card.append(acts);list.append(card)}
+  const mark=document.createElement('p');mark.className='history-mark';mark.textContent=item.organized?'整理済み（取り消せます）':'未整理';card.append(mark);
+  const acts=document.createElement('div');acts.className='history-controls';for(const [name,kind] of [['全文コピー','copy'],['本文を戻す','restore'],['分類を編集','edit'],[item.organized?'未整理に戻す':'整理済みにする','toggleOrganized'],['削除','delete']]){const b=document.createElement('button');b.className='btn '+(kind==='delete'?'danger':'');b.type='button';b.textContent=name;b.addEventListener('click',()=>kind==='edit'?openHistoryMetadata(card,item):historyAction(kind,item.id));acts.append(b)}card.append(acts);list.append(card)}
  if(!filtered.length){const msg=document.createElement('p');msg.className='small';msg.textContent=journalReady?'該当する履歴はありません。':'履歴を読み込めません。';list.append(msg)}
- $('showMoreHistory').classList.toggle('hidden',filtered.length<=journalPageSize)}
+ $('showMoreHistory').classList.toggle('hidden',filtered.length<=journalPageSize);renderBatchControls(filtered)}
+function selectFilteredHistory(){if(!journalReady)return;for(const entry of filteredHistory())selectedHistoryIds.add(entry.id);renderHistory();toast('現在の検索結果をすべて選択しました')}
+function clearSelectedHistory(){selectedHistoryIds.clear();renderHistory()}
+function assembleSelectedHistory(){const entries=journalEntries.filter(x=>selectedHistoryIds.has(x.id)).sort((a,b)=>a.createdAt.localeCompare(b.createdAt));const instruction=$('batchPrompt').value.trim();const useFull=$('batchTextKind').value==='fullText';
+ const sections=entries.map((item,i)=>{const date=new Date(item.createdAt);const dateLabel=isNaN(date.getTime())?item.createdAt:date.toLocaleString('ja-JP');const modeLabel=item.mode==='generation'?'生成':(SUBMODES.find(s=>s.id===item.mode)?.name||item.mode);const tags=item.tags.length?item.tags.join(' / '):'なし';const text=useFull?item.fullText:(item.body||item.fullText);
+ return '【ログ '+String(i+1).padStart(3,'0')+'】\n日時：'+dateLabel+'\nモード：'+modeLabel+'\n作品・IF：'+(item.world||'未分類')+'\n作中の時点：'+(item.period||'指定なし')+'\nタグ：'+tags+'\n\n【'+(useFull?'当時コピーした依頼文全文':'書き込み原文')+'】\n'+text});
+ return [instruction,'【選択した記録：'+entries.length+'件／古い順】',...sections].filter(Boolean).join('\n\n');
+}
+async function copySelectedHistory(){if(!selectedHistoryIds.size)return toast('先に履歴を選択してください');const txt=assembleSelectedHistory();
+ if(txt.length>120000&&!confirm('まとめた文章は'+txt.length.toLocaleString('ja-JP')+'文字あります。ChatGPTへ一度に渡すには長い可能性があります。省略せずコピーしますか？'))return;
+ let ok=false;try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(txt);ok=true}}catch(e){}
+ if(!ok){$('batchManualArea').classList.remove('hidden');const area=$('batchManualText');area.value=txt;area.focus();area.select();try{ok=document.execCommand('copy')}catch(e){}}
+ if(ok){$('batchManualArea').classList.add('hidden');toast('選択した'+selectedHistoryIds.size+'件をコピーしました。整理済みには自動変更しません')}else{toast('自動コピーできませんでした。下の欄を手動でコピーしてください');$('batchManualArea').scrollIntoView({behavior:'smooth',block:'nearest'})}
+}
+async function markHistorySelection(ids,done){if(!journalReady)return toast('履歴DBが使えません');const rows=journalEntries.filter(e=>ids.has(e.id));if(!rows.length)return toast('履歴を選択してください');if(rows.length>20&&!confirm(rows.length+'件を'+(done?'整理済み':'未整理')+'に変更しますか？（原文はそのまま残ります）'))return;
+ const now=new Date().toISOString();const updated=rows.map(e=>({...e,organized:done,organizedAt:done?now:''}));
+ try{await journalTransaction('merge',updated);const changed=new Map(updated.map(e=>[e.id,e]));journalEntries=journalEntries.map(e=>changed.get(e.id)||e);renderHistory();toast(rows.length+'件を'+(done?'整理済み':'未整理')+'にしました（原文は保持）')}
+ catch(e){toast('整理状態を保存できませんでした。元の状態を保持しています')}
+}
 function openHistoryMetadata(card,item){const prev=card.querySelector('.history-edit');if(prev){prev.remove();return}const editor=document.createElement('div');editor.className='history-edit';const heading=document.createElement('strong');heading.textContent='この履歴だけの分類を編集';editor.append(heading);
  const grid=document.createElement('div');grid.className='history-edit-grid';
  const makeSel=(labelText,values,current,emptyText)=>{const box=document.createElement('div'),label=document.createElement('label'),sel=document.createElement('select');label.className='label';label.textContent=labelText;sel.className='field';sel.add(new Option(emptyText,''));for(const v of uniqueNames([...values,...(current?[current]:[])]))sel.add(new Option(v,v));sel.value=current||'';box.append(label,sel);grid.append(box);return sel};
@@ -284,9 +340,10 @@ function openHistoryMetadata(card,item){const prev=card.querySelector('.history-
 async function historyAction(kind,id){const entry=journalEntries.find(x=>x.id===id);if(!entry)return;
  if(kind==='copy'){await copyText(entry.fullText);return}
  if(kind==='restore'){captureDraft();saveDraftNow();const current=drafts[entry.mode].body;if(current&&current!==entry.body&&!confirm('このモードで入力途中の本文を、保存済みの本文で置き換えますか？\n今の入力内容は先にコピーして残しておくことをおすすめします。'))return;if(entry.mode==='generation'){mode='generation';const match=state.worlds.find(w=>w.name===entry.world);worldId=match?.id||''}else{mode='conversation';submode=entry.mode;policyChoice=state.defaultPolicies[submode]||'none'}rememberMode();drafts[entry.mode].body=entry.body;drafts[entry.mode].period=entry.period;drafts[entry.mode].tags=[...entry.tags];if(entry.mode!=='generation')drafts[entry.mode].worldId=state.worlds.find(w=>w.name===entry.world)?.id||'';renderWorlds(worldId);loadActiveDraft();renderMode();queueDraftSave();$('composerSection').scrollIntoView({behavior:'smooth',block:'start'});toast('本文と分類を入力欄へ戻しました。元の履歴は保持しています');return}
- if(kind==='delete'){if(!confirm('この書き込み履歴を削除しますか？'))return;try{await journalTransaction('delete',[id]);journalEntries=journalEntries.filter(x=>x.id!==id);renderHistory();renderDataStatus();toast('履歴を削除しました')}catch(e){toast('削除に失敗しました')}}}
+ if(kind==='toggleOrganized'){await markHistorySelection(new Set([id]),!entry.organized);return}
+ if(kind==='delete'){if(!confirm('この書き込み履歴を削除しますか？'))return;try{await journalTransaction('delete',[id]);journalEntries=journalEntries.filter(x=>x.id!==id);selectedHistoryIds.delete(id);renderHistory();renderDataStatus();toast('履歴を削除しました')}catch(e){toast('削除に失敗しました')}}}
 async function recordHistory(fullText,body){if(!journalReady)return false;const recent=journalEntries[0];if(recent&&recent.fullText===fullText&&recent.mode===activeMode()&&Date.now()-new Date(recent.createdAt).getTime()<2000)return true;
- const d=activeDraft();const entry={id:newid(),createdAt:new Date().toISOString(),mode:activeMode(),world:metadataWorldName(),period:d.period,tags:uniqueNames(d.tags),body,fullText};
+ const d=activeDraft();const entry={id:newid(),createdAt:new Date().toISOString(),mode:activeMode(),world:metadataWorldName(),period:d.period,tags:uniqueNames(d.tags),body,fullText,organized:false,organizedAt:''};
  try{await journalTransaction('add',[entry]);journalEntries.unshift(entry);renderHistory();return true}catch(e){setJournalStatus('履歴保存に失敗しました。JSONバックアップを確認してください。',true);return false}}
 async function copyWithHistory(txt,body){captureDraft();saveDraftNow();const ok=await copyText(txt);if(!ok)return;const content=(body===undefined?$('messageBody').value.trim():body.trim())||(mode==='generation'?$('extraInput').value.trim():'');
  const saved=await recordHistory(txt,content);if(!saved)toast('コピーしました。ただし履歴保存に失敗しました。');else toast('コピーして履歴に保存しました')}
@@ -386,18 +443,19 @@ function mergeImport(imported){
  for(const typ of ['viewpoint','scene'])state.unassigned[typ]=uniqueNames([...state.unassigned[typ],...imported.unassigned[typ]]);
  state.periodOptions=uniqueNames([...state.periodOptions,...imported.periodOptions]);state.tags=uniqueNames([...state.tags,...imported.tags]);
  for(const k of MODES)if(imported.rules[k]&&!state.rules[k])state.rules[k]=imported.rules[k];
+ if(state.batchPrompt===DEFAULT_BATCH_PROMPT&&imported.batchPrompt!==DEFAULT_BATCH_PROMPT)state.batchPrompt=imported.batchPrompt;
  for(const k of ['wall','fan','memo','casual'])if(state.conversationPrompts[k]===DEFAULT_CONVERSATION[k]&&imported.conversationPrompts[k]!==DEFAULT_CONVERSATION[k])state.conversationPrompts[k]=imported.conversationPrompts[k];
  const mapped={none:'none'};
  for(const p of imported.policies){if(p.id==='none')continue;const current=getPolicy(p.id);if(current?.name===p.name&&current?.body===p.body){mapped[p.id]=p.id;continue}const exact=state.policies.find(x=>x.name===p.name&&x.body===p.body);if(exact){mapped[p.id]=exact.id;continue}if(state.policies.length>=301)break;const id=current?newid():p.id;let name=p.name;if(state.policies.some(x=>x.name===name))name=(name+'（読み込み）').slice(0,120);state.policies.splice(Math.max(0,state.policies.length-1),0,{...p,id,name});mapped[p.id]=id}
  for(const k of ['wall','fan','memo','casual']){if(state.defaultPolicies[k]===DEFAULT_POLICIES[k]&&imported.defaultPolicies[k]!==DEFAULT_POLICIES[k]){const candidate=mapped[imported.defaultPolicies[k]];if(candidate&&getPolicy(candidate))state.defaultPolicies[k]=candidate}}
  return state.templates.length-oldCount;
 }
-function exportPayload(){return {...copy(state),version:10,app:'Prompt Shelf',format:'prompt-shelf-backup',exportedAt:new Date().toISOString(),drafts:copy(drafts),journal:copy(journalEntries)}}
+function exportPayload(){return {...copy(state),version:11,app:'Prompt Shelf',format:'prompt-shelf-backup',exportedAt:new Date().toISOString(),drafts:copy(drafts),journal:copy(journalEntries)}}
 function makeExportText(){return JSON.stringify(exportPayload(),null,2)}
 function exportData(){
  saveDraftNow();if(!journalReady){toast('履歴DBを読めていないため、全件バックアップできません。履歴の状態を確認してください。');return}
  const blob=new Blob([makeExportText()],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
- a.href=url;a.download='prompt-shelf-v10-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+ a.href=url;a.download='prompt-shelf-v11-backup-'+new Date().toISOString().replace(/[:.]/g,'-')+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
  toast('書き出しを開始しました。保存先にJSONがあるか確認してください。');
 }
 function fillBackup(){saveDraftNow();if(!journalReady){toast('履歴データを読み込めていないため、完全バックアップを表示できません');return} $('manualBackupDetails').open=true;$('manualBackupText').value=makeExportText();toast('現在の全データを表示しました') }
@@ -410,7 +468,7 @@ function parseImport(text){
    const converted=convertOld(raw,null);converted.worlds=[];return {data:converted,drafts:emptyDrafts(),journal:[],version:1,date:'不明'};
  }
  if(!raw||typeof raw!=='object'||raw.app!=='Prompt Shelf')throw Error('Prompt Shelfのバックアップではありません');
- if(!Number.isInteger(raw.version)||raw.version<1||raw.version>10)throw Error('対応していないバージョンです（v1〜v10に対応）');
+ if(!Number.isInteger(raw.version)||raw.version<1||raw.version>11)throw Error('対応していないバージョンです（v1〜v11に対応）');
  if(!Array.isArray(raw.templates)||!raw.templates.every(t=>t&&typeof t.title==='string'&&typeof t.body==='string'))throw Error('共通文の形式が不正です');
  if(raw.version>=4){
     if(!validateShape(raw))throw Error('IFや候補の形式が不正です');
@@ -439,7 +497,7 @@ async function confirmImport(){
  try{
   if(strategy==='replace'){
    await journalTransaction('replace',incoming.journal);
-   journalEntries=copy(incoming.journal).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+   journalEntries=copy(incoming.journal).sort((a,b)=>b.createdAt.localeCompare(a.createdAt));selectedHistoryIds.clear();
    state=copy(incoming.data);drafts=normalizeDrafts(incoming.drafts);
   }else{
    const existing=new Set(journalEntries.map(x=>x.id));const additions=[];
@@ -454,14 +512,14 @@ async function confirmImport(){
      }
   }
  }catch(e){toast('履歴の読み込みに失敗したため中断しました：'+e.message);return}
- const ok=persist(),draftOK=saveDraftNow();setTemplate(state.templates[0]||null);changeWorld(state.worlds[0]?.id||'');policyChoice=state.defaultPolicies[submode]||'none';loadActiveDraft();renderMode();renderHistory();
+ const ok=persist(),draftOK=saveDraftNow();$('batchPrompt').value=state.batchPrompt;setTemplate(state.templates[0]||null);changeWorld(state.worlds[0]?.id||'');policyChoice=state.defaultPolicies[submode]||'none';loadActiveDraft();renderMode();renderHistory();
  $('importReview').classList.add('hidden');pendingImport=null;
  toast(ok&&draftOK?(strategy==='replace'?'バックアップから復元しました':'バックアップを追加・統合しました'):'読み込みましたが一部の保存に失敗しました。JSONで退避してください');
 }
 function restoreCheckpoint(){
  if(!canSwitch())return;
  let old;try{old=localStorage.getItem(CHECKPOINT);if(!old)return;const parsed=readMain(old);if(!confirm('直前の保存状態へ戻しますか？\n現在の状態は「直前の保存状態」として入れ替わります。'))return;state=parsed}catch(e){toast('以前の保存状態を読み込めませんでした');return}
- const ok=persist();setTemplate(state.templates[0]||null);changeWorld(state.worlds[0]?.id||'');policyChoice=state.defaultPolicies[submode]||'none';renderMode();renderHistory();toast(ok?'直前の保存状態に戻しました':'読み戻しましたが保存できませんでした');
+ const ok=persist();$('batchPrompt').value=state.batchPrompt;setTemplate(state.templates[0]||null);changeWorld(state.worlds[0]?.id||'');policyChoice=state.defaultPolicies[submode]||'none';renderMode();renderHistory();toast(ok?'直前の保存状態に戻しました':'読み戻しましたが保存できませんでした');
 }
 async function importData(file){if(!file)return;if(file.size>24*1024*1024){toast('24MB以下のJSONを選んでください');return}try{reviewImport(await file.text(),file.name)}catch(e){toast('ファイルを読み込めませんでした')}}
 $('tabGeneration').addEventListener('click',()=>{if(mode==='conversation'&&!canSwitchPolicy())return;captureDraft();saveDraftNow();mode='generation';rememberMode();loadActiveDraft();renderMode()});
@@ -478,7 +536,10 @@ $('worldSelect').addEventListener('change',e=>changeWorld(e.target.value));$('wo
 for(const t of ['viewpoint','scene']){$(t+'Select').addEventListener('change',e=>setChild(t,e.target.value));$(t+'Add').addEventListener('click',()=>addChild(t));$(t+'Rename').addEventListener('click',()=>renameChild(t));$(t+'Delete').addEventListener('click',()=>deleteChild(t))}
 $('legacyType').addEventListener('change',renderUnassigned);$('legacyAssign').addEventListener('click',()=>handleLegacy(false));$('legacyDiscard').addEventListener('click',()=>handleLegacy(true));$('extraInput').addEventListener('input',()=>{captureDraft();buildPreview()});$('messageBody').addEventListener('input',()=>{captureDraft();buildPreview()});$('outputText').addEventListener('input',captureDraft);$('copyPreview').addEventListener('click',()=>copyWithHistory(buildText()));$('applyOutput').addEventListener('click',()=>{applyOutput();captureDraft()});$('copyOutput').addEventListener('click',()=>copyWithHistory($('outputText').value,$('outputText').value));$('copyCompose').addEventListener('click',()=>{if(!$('messageBody').value.trim()&&mode==='conversation'){toast('まず【本文】を入力してください。指示だけなら隣のボタンでコピーできます');return}copyWithHistory(buildText())});$('copyInstructions').addEventListener('click',()=>copyText(instructionsOnly()));$('clearComposer').addEventListener('click',()=>{if(!$('messageBody').value||confirm('入力中の本文を空欄にしますか？\nコピー済みの履歴は消えません。')){$('messageBody').value='';captureDraft();saveDraftNow();buildPreview();$('messageBody').focus()}});$('metaWorldSelect').addEventListener('change',e=>{activeDraft().worldId=e.target.value;queueDraftSave();renderMetadata()});$('metaWorldAdd').addEventListener('click',addMetaWorld);$('metaWorldName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addMetaWorld()}});
  $('metaPeriodSelect').addEventListener('change',e=>{activeDraft().period=e.target.value;queueDraftSave();renderMetadata()});$('metaPeriodAdd').addEventListener('click',addPeriod);$('metaPeriodRename').addEventListener('click',renamePeriod);$('metaPeriodDelete').addEventListener('click',deletePeriod);$('metaPeriodEdit').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addPeriod()}});
- $('metaTagAdd').addEventListener('click',addTag);$('metaTagName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addTag()}});$('copyTemplateBody').addEventListener('click',()=>copyText(templateDraft.body));$('exportData').addEventListener('click',exportData);$('importData').addEventListener('click',()=>$('importFile').click());$('importFile').addEventListener('change',async e=>{await importData(e.target.files?.[0]);e.target.value='' });$('undoSave').addEventListener('click',restoreCheckpoint);$('fillBackupText').addEventListener('click',fillBackup);$('copyBackupText').addEventListener('click',copyManualBackup);$('importPaste').addEventListener('click',()=>reviewImport($('manualBackupText').value,'貼り付けた文字列'));$('importStrategy').addEventListener('change',updateImportWarning);$('confirmImport').addEventListener('click',confirmImport);$('cancelImport').addEventListener('click',()=>{$('importReview').classList.add('hidden');pendingImport=null;toast('読み込みをキャンセルしました')});$('historySearch').addEventListener('input',()=>{journalPageSize=50;renderHistory()});$('historyFilter').addEventListener('change',()=>{journalPageSize=50;renderHistory()});for(const id of ['historyWorldFilter','historyPeriodFilter','historyTagFilter'])$(id).addEventListener('change',()=>{journalPageSize=50;renderHistory()});$('showMoreHistory').addEventListener('click',()=>{journalPageSize+=50;renderHistory()});
+ $('metaTagAdd').addEventListener('click',addTag);$('metaTagName').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addTag()}});$('copyTemplateBody').addEventListener('click',()=>copyText(templateDraft.body));$('exportData').addEventListener('click',exportData);$('importData').addEventListener('click',()=>$('importFile').click());$('importFile').addEventListener('change',async e=>{await importData(e.target.files?.[0]);e.target.value='' });$('undoSave').addEventListener('click',restoreCheckpoint);$('fillBackupText').addEventListener('click',fillBackup);$('copyBackupText').addEventListener('click',copyManualBackup);$('importPaste').addEventListener('click',()=>reviewImport($('manualBackupText').value,'貼り付けた文字列'));$('importStrategy').addEventListener('change',updateImportWarning);$('confirmImport').addEventListener('click',confirmImport);$('cancelImport').addEventListener('click',()=>{$('importReview').classList.add('hidden');pendingImport=null;toast('読み込みをキャンセルしました')});$('batchPrompt').value=state.batchPrompt;
+ $('batchPrompt').addEventListener('change',()=>{state.batchPrompt=$('batchPrompt').value.slice(0,20000);persist()});
+ $('batchSelectFiltered').addEventListener('click',selectFilteredHistory);$('batchClearSelection').addEventListener('click',clearSelectedHistory);$('batchCopy').addEventListener('click',copySelectedHistory);$('batchMarkDone').addEventListener('click',()=>markHistorySelection(selectedHistoryIds,true));$('batchMarkPending').addEventListener('click',()=>markHistorySelection(selectedHistoryIds,false));$('historyOrganizedFilter').addEventListener('change',()=>{journalPageSize=50;renderHistory()});
+ $('historySearch').addEventListener('input',()=>{journalPageSize=50;renderHistory()});$('historyFilter').addEventListener('change',()=>{journalPageSize=50;renderHistory()});for(const id of ['historyWorldFilter','historyPeriodFilter','historyTagFilter'])$(id).addEventListener('change',()=>{journalPageSize=50;renderHistory()});$('showMoreHistory').addEventListener('click',()=>{journalPageSize+=50;renderHistory()});
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveTemplate()}});window.addEventListener('pagehide',saveDraftNow);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveDraftNow()});window.addEventListener('beforeunload',e=>{saveDraftNow();if(isDirty()){e.preventDefault();e.returnValue=''}});
 setTemplate(state.templates[0]||null);renderWorlds(state.worlds[0]?.id||'');restoreMode();policyChoice=state.defaultPolicies[submode]||'none';loadActiveDraft();renderMode();renderDataStatus();prepareJournal();
 })();
