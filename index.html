@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<title>Prompt Shelf v14 | 履歴のワンタップ整理と単発セーブ</title>
+<title>Prompt Shelf v15 | 迷わず使える3画面レイアウト</title>
 <style>
 :root{--ink:#213449;--muted:#65778a;--line:#dce5ef;--blue:#2a648e;--blue-2:#e9f2f9;--bg:#f4f7f9;--card:#fff;--danger:#a74648;--ok:#347664;--shadow:0 10px 25px rgba(29,60,82,.045)}
 *{box-sizing:border-box}html,body{min-height:100%;margin:0}body{background:linear-gradient(135deg,#edf4f8 0,#f9fafb 49%,#eef5f5 100%);color:var(--ink);font:14px/1.65 -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.38}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid #9bc8e2;outline-offset:2px}
@@ -98,13 +98,73 @@
 .history-advanced[open]>summary{margin-bottom:10px}
 #advancedHistory:not([open])~#historyList .history-select{display:none}
 @media(max-width:520px){.quick-batch{padding:11px}.quick-batch-actions .btn{flex:1 1 100%}}
+
+/* v15: navigation-first UI, previous data storage and prompts are unchanged */
+.workspace-nav{position:sticky;top:8px;z-index:8;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:6px;margin:0 0 9px;background:rgba(244,248,251,.97);border:1px solid #d5e1ec;border-radius:16px;box-shadow:0 9px 23px #21344914;backdrop-filter:blur(13px)}
+.workspace-tab{display:flex;justify-content:center;align-items:center;gap:8px;min-width:0;border:0;background:transparent;color:#52677a;border-radius:11px;padding:11px 8px;font-weight:850;font-size:14px;white-space:nowrap}
+.workspace-tab .nav-icon{font-size:18px;font-weight:500;line-height:1}.workspace-tab small{font-size:11px;color:inherit;opacity:.74;font-weight:600}
+.workspace-tab.active{background:#fff;color:#216089;box-shadow:0 2px 12px #2a648e20}
+.workspace-helper{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:7px 5px 13px}.workspace-description{font-size:12px;color:var(--muted);margin:0;line-height:1.6}.jump-compose{flex:none;background:#fff;color:#27618c;border:1px solid #d1e0ec;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:780}
+.v15-foot{font-size:11px;color:var(--muted);border:0;padding:0;margin:13px 4px 0}.v15-foot>summary{color:var(--muted);font-weight:650}.v15-foot .footer{margin:7px 0;line-height:1.7}
+
+.workspace-hidden{display:none!important}.layout{align-items:start}
+#generationTemplateSection,#generationContextSection{min-width:0}
+#generationTemplateSection .head,#generationContextSection .head{margin-bottom:9px}
+#generationTemplateSection .label{margin-top:9px}
+/* Hide rare management operations, keep selections at fingertips. */
+.v15-fold{margin-top:11px;border:1px solid #deebf4;background:#fafcff;border-radius:11px;padding:8px 11px}
+.v15-fold>summary{color:#2a648e;font-size:12px;font-weight:750;list-style:none}
+.v15-fold>summary::-webkit-details-marker{display:none}
+.v15-fold>summary::before{content:'＋';display:inline-block;margin-right:7px;font-weight:750}
+.v15-fold[open]>summary::before{content:'－'}
+.v15-fold[open]>summary{padding-bottom:9px;border-bottom:1px solid #e1eaf1;margin-bottom:10px}
+#templateManageDetails>.label:first-of-type{margin-top:9px}
+#generationTemplateSection .stage-switch{margin-top:5px}
+#generationTemplateSection .stage-hint{font-size:11px;margin:5px 0}
+#generationTemplateSection .row .btn{min-height:37px}
+#generationContextSection>.small{display:none}
+.context-pickers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.context-pickers>.picker{margin:0;padding:10px;background:#f9fcfe}
+.context-pickers .pickhead{margin:0 0 5px}
+.context-pickers .pickhead label{margin:0;font-size:12px}
+.context-pickers .picker-manage{margin-top:7px;padding-top:0;border-top:0}
+.context-pickers .picker-manage summary{font-size:11px;color:#567c99}
+.context-pickers .picker-manage .row{margin-top:7px}
+#stageSavePanel{margin-top:10px}
+#stageSavePanel .info{line-height:1.6}
+#stageSavePanel .label{margin:8px 0 4px}
+#stageSavePanel .save-rule-details{font-size:11px;margin-top:8px}
+#composerSection .compose-hint{margin:0 0 5px}
+#composerSection #messageBodyLabel{margin-top:7px}
+#composerSection .message-entry{min-height:150px}
+#metadataSection{margin-top:11px;padding:0;background:#fafcff}
+#metadataSection .v15-fold{border:none;margin:0;background:transparent}
+#metadataSection .meta-heading{margin-top:5px}
+#resultSection .v15-fold{border:none;background:transparent;margin:0;padding:0}
+#resultSection .head{margin-top:7px}
+#resultSection{padding:13px 17px}
+#historySection .history-explain:first-of-type{margin:0 0 10px}
+#historySection .quick-batch{margin-top:8px}
+#historyExplore{margin-top:13px}
+#historyExplore>.history-toolbar{margin-top:12px}
+#historyList{max-height:58vh;overflow:auto;overscroll-behavior:contain;padding-right:4px}
+#resultVault,#workspaceMain>.storage-card{max-width:none}
+#workspaceMain .step{width:auto;min-width:25px;padding:0 5px}
+@media(max-width:820px){.context-pickers{grid-template-columns:1fr 1fr}.context-pickers>.picker:first-child{grid-column:1/-1}}
+@media(max-width:520px){.top{display:flex;align-items:center;margin:0 0 8px}.top h1{font-size:21px;margin:1px 0 0}.top .eyebrow{font-size:10px}.top .intro{display:none}.top .status{margin-top:0;padding:5px 8px;font-size:10px}.workspace-helper{margin:7px 3px 10px}.workspace-description{font-size:10px}.jump-compose{font-size:10px;padding:6px 8px}.shell{padding-top:10px}.workspace-nav{top:0;border-radius:0;margin:0 -10px 9px;padding:5px;gap:3px}.workspace-tab{flex-direction:column;gap:2px;min-height:53px;padding:7px 3px;font-size:13px}.workspace-tab .nav-icon{font-size:17px}.workspace-tab small{font-size:9px}.workspace-description{font-size:11px}.context-pickers{grid-template-columns:1fr}.context-pickers>.picker:first-child{grid-column:auto}#generationTemplateSection,#generationContextSection{padding:13px}#generationTemplateSection .row .btn{flex:1 1 auto}#generationTemplateSection #templateSelect{flex:1 1 100%}.quick-batch-actions .btn{flex:1 1 100%}}
 </style>
 </head>
 <body>
 <div class="shell">
-<header class="top"><div><div class="eyebrow">PROMPT SHELF / V14</div><h1>定型文とモード</h1><p class="intro">生成・会話を自動保存。溜まった履歴はワンタップでまとめて整理へ。完成シーンのDrive保存機能も引き継ぎます。</p></div><span class="status" id="status">保存状況を確認中</span></header>
+<header class="top"><div><div class="eyebrow">PROMPT SHELF / V15</div><h1>Prompt Shelf</h1><p class="intro">書く・取り出す・管理する。使う場所だけを開いて、必要な操作に集中できます。</p></div><span class="status" id="status">保存状況を確認中</span></header>
 <div id="warning" class="alert hidden" role="alert">この開き方ではブラウザへの保存を確認できません。作業が終わる前に必ずバックアップを書き出すか、文字列をコピーしてください。</div>
-<main class="layout">
+<nav class="workspace-nav" id="workspaceNav" aria-label="作業画面の切り替え">
+ <button type="button" class="workspace-tab active" data-workspace="compose" aria-current="page"><span class="nav-icon" aria-hidden="true">✎</span><span>作成</span><small>文章を書く</small></button>
+ <button type="button" class="workspace-tab" data-workspace="history"><span class="nav-icon" aria-hidden="true">▤</span><span>履歴</span><small>まとめて取り出す</small></button>
+ <button type="button" class="workspace-tab" data-workspace="manage"><span class="nav-icon" aria-hidden="true">⚙</span><span>管理</span><small>保存・引き継ぎ</small></button>
+</nav>
+<div class="workspace-helper"><p class="workspace-description" id="workspaceDescription" aria-live="polite">モードと作品を選び、本文を書いてコピー。設定の編集は必要なときだけ開けます。</p><button class="jump-compose" type="button" id="jumpCompose">本文へ移動 ↓</button></div>
+<main class="layout" id="workspaceMain">
 <section class="card full" aria-labelledby="modeHead"><div class="head"><div class="headmain"><span class="step">1</span><h2 id="modeHead">モードを選ぶ</h2></div><span class="pill">2つの大分類</span></div>
 <div class="tabbar" role="group" aria-label="大分類のモード"><button id="tabGeneration" class="active" type="button" aria-pressed="true">生成</button><button id="tabConversation" type="button" aria-pressed="false">会話</button></div>
 <div id="conversationPane" class="hidden"><div class="submodes" role="group" aria-label="会話の用途"><button data-submode="wall" type="button">壁打ち</button><button data-submode="fan" type="button">オタトーク</button><button data-submode="memo" type="button">メモ</button><button data-submode="casual" type="button">雑談</button></div>
@@ -261,7 +321,7 @@
 </section>
 
 <section class="card full storage-card" aria-labelledby="storageHead">
-  <div class="head"><div class="headmain"><span class="step">保存</span><h2 id="storageHead">データの保存・引き継ぎ</h2></div><span class="pill">v14</span></div>
+  <div class="head"><div class="headmain"><span class="step">保存</span><h2 id="storageHead">データの保存・引き継ぎ</h2></div><span class="pill">v15</span></div>
   <p class="small">共通文・IF・時点・タグ候補・各モード設定に加え、下書き・書き込み履歴・整理結果の保存庫もまとめて保管します。<strong>HTML本体と登録データは別物</strong>です。</p>
   <p class="storage-meta storage-stat" id="dataStatus" aria-live="polite">保存状況を確認しています。</p>
   <div class="storage-actions">
@@ -507,7 +567,7 @@ function renderResultEditor(){const d=resultDraft;$('resultEditorHeading').textC
 function resetResultEditor(){resultDraft=emptyResultDraft();renderResultEditor();saveResultDraftNow()}
 function abandonResultEditor(){if((resultDraft.title||resultDraft.body)&&!confirm('入力中の整理結果を空にしますか？未保存の内容は消えます。'))return;resetResultEditor()}
 function linkSelectedToResult(){if(!selectedHistoryIds.size)return toast('履歴の一覧で元になる書き込みを先に選択してください');captureResultDraft();resultDraft.sourceIds=[...selectedHistoryIds];renderResultEditor();queueResultDraft();toast(resultDraft.sourceIds.length+'件の元ログを紐付けました')}
-function startResultFromBatch(){if((resultDraft.title||resultDraft.body)&&!confirm('整理結果の入力欄を新規作成に切り替えますか？未保存の入力内容は上書きされます。'))return;resultDraft=emptyResultDraft();resultDraft.sourceIds=[...selectedHistoryIds];if(resultDraft.sourceIds.length){const sources=journalEntries.filter(x=>selectedHistoryIds.has(x.id));if(sources.every(x=>x.world===sources[0].world))resultDraft.world=sources[0].world;if(sources.every(x=>x.period===sources[0].period))resultDraft.period=sources[0].period}renderResultEditor();saveResultDraftNow();$('resultVaultDetails').open=true;$('resultVault').scrollIntoView({behavior:'smooth',block:'start'});$('resultTitle').focus()}
+function startResultFromBatch(){if((resultDraft.title||resultDraft.body)&&!confirm('整理結果の入力欄を新規作成に切り替えますか？未保存の入力内容は上書きされます。'))return;resultDraft=emptyResultDraft();resultDraft.sourceIds=[...selectedHistoryIds];if(resultDraft.sourceIds.length){const sources=journalEntries.filter(x=>selectedHistoryIds.has(x.id));if(sources.every(x=>x.world===sources[0].world))resultDraft.world=sources[0].world;if(sources.every(x=>x.period===sources[0].period))resultDraft.period=sources[0].period}renderResultEditor();saveResultDraftNow();$('resultVaultDetails').open=true;window.PS15_switchWorkspace?.('manage');$('resultVault').scrollIntoView({behavior:'smooth',block:'start'});$('resultTitle').focus()}
 async function saveResult(){captureResultDraft();const d=normalizeResultDraft(resultDraft);if(!d.title.trim()||!d.body.trim())return toast('タイトルと本文を両方入力してください');if(!journalReady)return toast('整理結果DBが使えません。本文をコピーして保存してください');const original=resultEntries.find(x=>x.id===d.id),now=new Date().toISOString();const row={...d,id:original?.id||newid(),title:d.title.trim(),body:d.body.trim(),createdAt:original?.createdAt||now,updatedAt:now};try{await noteTransaction('upsert',[row]);resultEntries=[row,...resultEntries.filter(x=>x.id!==row.id)].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));resetResultEditor();renderResults();renderDataStatus();toast('整理結果を保存しました。元の書き込み履歴は変更していません')}catch(e){toast('整理結果を保存できませんでした。入力内容を退避してください')}}
 function filteredResults(){const q=$('resultSearch').value.trim().toLowerCase(),st=$('resultStatusFilter').value;return resultEntries.filter(x=>(st==='all'||x.status===st)&&(!q||(x.title+' '+x.body+' '+x.world+' '+x.period+' '+x.tags.join(' ')).toLowerCase().includes(q)))}
 function renderResults(){const count=$('resultCount');if(!count)return;count.textContent=resultEntries.length+'件';const list=$('resultList');list.replaceChildren();const filtered=filteredResults();$('resultStorageStatus').textContent=journalReady?'整理結果は書き込み履歴と別のIndexedDB領域へ保存されます。検索結果：'+filtered.length+'件':'履歴データベースを使用できません。保存はできません。';for(const x of filtered.slice(0,resultPageSize)){
@@ -516,7 +576,7 @@ function renderResults(){const count=$('resultCount');if(!count)return;count.tex
  const preview=document.createElement('p');preview.className='result-text';preview.textContent=x.body;card.append(preview);
  const actions=document.createElement('div');actions.className='history-controls';for(const [label,action] of [['編集','edit'],['本文コピー','copy'],['元ログを選択','source'],['削除','delete']]){if(action==='source'&&!x.sourceIds.length)continue;const btn=document.createElement('button');btn.type='button';btn.className='btn'+(action==='delete'?' danger':'');btn.textContent=label;btn.addEventListener('click',()=>resultAction(action,x.id));actions.append(btn)}card.append(actions);list.append(card)
  }if(!filtered.length){const msg=document.createElement('p');msg.className='small';msg.textContent='該当する整理結果はありません。';list.append(msg)}$('resultMore').classList.toggle('hidden',filtered.length<=resultPageSize)}
-async function resultAction(action,id){const note=resultEntries.find(x=>x.id===id);if(!note)return;if(action==='edit'){if((resultDraft.title||resultDraft.body)&&!confirm('現在入力中の整理結果を別の保存済み結果に切り替えますか？未保存の変更は失われます。'))return;resultDraft=normalizeResultDraft(note);renderResultEditor();saveResultDraftNow();$('resultVaultDetails').open=true;$('resultVault').scrollIntoView({behavior:'smooth',block:'start'});return}
+async function resultAction(action,id){const note=resultEntries.find(x=>x.id===id);if(!note)return;if(action==='edit'){if((resultDraft.title||resultDraft.body)&&!confirm('現在入力中の整理結果を別の保存済み結果に切り替えますか？未保存の変更は失われます。'))return;resultDraft=normalizeResultDraft(note);renderResultEditor();saveResultDraftNow();$('resultVaultDetails').open=true;window.PS15_switchWorkspace?.('manage');$('resultVault').scrollIntoView({behavior:'smooth',block:'start'});return}
  if(action==='copy'){await copyText(note.body);return}
  if(action==='source'){const present=note.sourceIds.filter(id=>journalEntries.some(x=>x.id===id));if(!present.length)return toast('紐付けられた元ログが見つかりません');selectedHistoryIds=new Set(present);$('historySearch').value='';for(const id of ['historyFilter','historyWorldFilter','historyPeriodFilter','historyTagFilter','historyOrganizedFilter'])$(id).value='all';renderHistory();$('historySection').scrollIntoView({behavior:'smooth',block:'start'});toast(present.length+'件の元ログを選択しました。チェックの付いた履歴を確認してください');return}
  if(action==='delete'){if(!confirm('整理結果「'+note.title+'」を削除しますか？元の書き込み履歴は削除しません。'))return;try{await noteTransaction('delete',[id]);resultEntries=resultEntries.filter(x=>x.id!==id);if(resultDraft.id===id)resetResultEditor();renderResults();renderDataStatus();toast('整理結果を削除しました（元ログは保持）')}catch(e){toast('削除に失敗しました')}}}
@@ -734,6 +794,73 @@ $('batchSelectFiltered').addEventListener('click',selectFilteredHistory);$('batc
  $('historySearch').addEventListener('input',()=>{journalPageSize=50;renderHistory()});$('historyFilter').addEventListener('change',()=>{journalPageSize=50;renderHistory()});for(const id of ['historyWorldFilter','historyPeriodFilter','historyTagFilter'])$(id).addEventListener('change',()=>{journalPageSize=50;renderHistory()});$('showMoreHistory').addEventListener('click',()=>{journalPageSize+=50;renderHistory()});
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();saveTemplate()}});window.addEventListener('pagehide',()=>{saveDraftNow();saveResultDraftNow()});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){saveDraftNow();saveResultDraftNow()}});window.addEventListener('beforeunload',e=>{saveDraftNow();saveResultDraftNow();if(isDirty()){e.preventDefault();e.returnValue=''}});
 loadResultDraft();renderResultEditor();restoreMode();setTemplate(stageTemplate());renderWorlds(worldId||state.worlds[0]?.id||'');policyChoice=state.defaultPolicies[submode]||'none';loadActiveDraft();renderMode();renderDataStatus();prepareJournal();
+})();
+</script>
+<script>
+/* v15 display-only refactor. All existing v14 data formats and element IDs stay intact. */
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const main=$('workspaceMain');
+if(!main)return;
+const sections=[...main.children];
+const modeSection=sections[0];
+// Backups are the primary management operation, so place them before the optional legacy vault.
+const vault=$('resultVault'),storage=main.querySelector('.storage-card');
+if(vault&&storage)main.insertBefore(storage,vault);
+const tabs=[...document.querySelectorAll('[data-workspace]')];
+const groups={compose:[modeSection,$('generationTemplateSection'),$('generationContextSection'),$('composerSection'),$('resultSection')],history:[$('historySection')],manage:[$('resultVault'),main.querySelector('.storage-card')]};
+const explanations={compose:'モードと作品を選び、本文を書いてコピー。設定の編集は必要なときだけ開けます。',history:'履歴の一括コピーとTXT出力。個別検索・編集は下の詳細から開けます。',manage:'整理結果の手動保存庫、バックアップ、データの引き継ぎはこちら。'};
+let active='compose';
+function switchWorkspace(which,scroll=false){
+ if(!groups[which])which='compose';
+ active=which;
+ for(const [group,els] of Object.entries(groups))for(const el of els)if(el)el.classList.toggle('workspace-hidden',group!==which);
+ for(const b of tabs){const on=b.dataset.workspace===which;b.classList.toggle('active',on);b.setAttribute('aria-current',on?'page':'false')}
+ $('workspaceDescription').textContent=explanations[which];$('jumpCompose').classList.toggle('hidden',which!=='compose');
+ try{localStorage.setItem('prompt_shelf_v15_workspace',which)}catch(e){}
+ if(scroll){const nav=$('workspaceNav');window.scrollTo({top:Math.max(0,window.scrollY+nav.getBoundingClientRect().top-8),behavior:'auto'})}
+}
+window.PS15_switchWorkspace=switchWorkspace;
+tabs.forEach(b=>b.addEventListener('click',()=>switchWorkspace(b.dataset.workspace,true)));
+$('jumpCompose')?.addEventListener('click',()=>{$('composerSection')?.scrollIntoView({behavior:'smooth',block:'start'})});
+function foldRemaining(id,marker,title){
+ const box=$(id),first=box?.querySelector(marker);if(!first)return;
+ const det=document.createElement('details');det.id=id==='generationTemplateSection'?'templateManageDetails':id+'Details';det.className='v15-fold';
+ const sum=document.createElement('summary');sum.textContent=title;det.append(sum);
+ box.insertBefore(det,first);
+ for(let node=first;node;){const next=node.nextSibling;det.append(node);node=next;}
+ return det;
+}
+// Keep stage and template selection visible; move lengthy editing controls into one disclosure.
+const templateEdit=foldRemaining('generationTemplateSection','label[for="templateName"]','共通文の内容を確認・編集');
+$('newTemplate')?.addEventListener('click',()=>{if(templateEdit)templateEdit.open=true},{capture:true});
+$('templateSelect')?.addEventListener('change',e=>{if(!e.target.value&&templateEdit)templateEdit.open=true},{capture:true});
+// Keep 3 selectors visible, make candidate management optional.
+const context=$('generationContextSection');
+if(context){
+ const pickers=[...context.querySelectorAll(':scope > .picker')];
+ if(pickers.length){const grid=document.createElement('div');grid.className='context-pickers';context.insertBefore(grid,pickers[0]);pickers.forEach(p=>grid.append(p));}
+ for(const p of pickers){const manage=p.querySelector('.manage');if(!manage)continue;const d=document.createElement('details');d.className='picker-manage v15-fold';const sum=document.createElement('summary');sum.textContent='候補の追加・変更';d.append(sum);while(manage.firstChild)d.append(manage.firstChild);manage.replaceWith(d);}
+}
+// Drive title is useful every day, while rules are not.
+const save=$('stageSavePanel');
+if(save){const info=[...save.querySelectorAll(':scope > p.info')].filter(p=>p.id!=='saveDestinationHint');if(info.length){const det=document.createElement('details');det.className='save-rule-details v15-fold';const sum=document.createElement('summary');sum.textContent='Google Driveの保存ルール';det.append(sum);info.forEach(p=>det.append(p));save.append(det)}}
+// Mode guidance still exists, but stops taking up the whole first screen.
+const modebox=modeSection?.querySelector('.modebox');
+if(modebox){const d=document.createElement('details');d.className='v15-fold';const summary=document.createElement('summary');summary.textContent='モードごとの指示文を確認・編集';d.append(summary);while(modebox.firstChild)d.append(modebox.firstChild);modebox.replaceWith(d)}
+// Metadata is optional, no need to scroll through three management groups to reach output.
+const meta=$('metadataSection');
+if(meta){const d=document.createElement('details');d.className='v15-fold';const s=document.createElement('summary');s.textContent='履歴の分類（任意・後から変更可）';d.append(s);while(meta.firstChild)d.append(meta.firstChild);meta.append(d)}
+// The original preview/working text remains available when requested.
+const result=$('resultSection');
+if(result){const d=document.createElement('details');d.id='v15Preview';d.className='v15-fold';const s=document.createElement('summary');s.textContent='完成文のプレビュー・手動編集';d.append(s);while(result.firstChild)d.append(result.firstChild);result.append(d)}
+// History now opens on the 3 quick actions instead of showing a long unfiltered log.
+const hist=$('historySection');
+if(hist){const start=hist.querySelector(':scope > .history-toolbar');if(start){const d=document.createElement('details');d.id='historyExplore';d.className='v15-fold';const s=document.createElement('summary');s.textContent='履歴を検索・個別確認';d.append(s);hist.insertBefore(d,start);for(let node=start;node;){const next=node.nextSibling;d.append(node);node=next;}}}
+const footer=document.querySelector('.footer');if(footer){const d=document.createElement('details');d.className='v15-foot';const sum=document.createElement('summary');sum.textContent='データ保存と使い方の注意事項';d.append(sum);footer.replaceWith(d);d.append(footer)}
+let previous='compose';try{previous=localStorage.getItem('prompt_shelf_v15_workspace')||'compose'}catch(e){}
+switchWorkspace(previous,false);
 })();
 </script>
 </body>
